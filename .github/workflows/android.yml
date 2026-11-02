@@ -41,19 +41,29 @@ jobs:
           if not settings.exists():
               settings = Path('android/settings.gradle')
           s = settings.read_text()
-          s, count = re.subn(r'(id\\s*\\(?["\\\']org\\.jetbrains\\.kotlin\\.android["\\\']\\)?\\s*version\\s*)["\\\'][^"\\\']+["\\\']', r'\\g<1>"2.1.0"', s)
-          if not count:
-              raise SystemExit('Could not find Kotlin Gradle plugin version')
-          settings.write_text(s)
+          lines = s.splitlines()
+          updated = False
+          for i, line in enumerate(lines):
+              if 'org.jetbrains.kotlin.android' in line and 'version' in line:
+                  lines[i] = re.sub(r'version\s+"[^"]+"', 'version "2.1.0"', line)
+                  updated = True
+          if not updated:
+              raise SystemExit('Kotlin plugin declaration not found')
+          settings.write_text('\n'.join(lines) + '\n')
           app = Path('android/app/build.gradle.kts')
           if not app.exists():
               app = Path('android/app/build.gradle')
           s = app.read_text()
-          s, count = re.subn(r'ndkVersion\\s*=\\s*[^\\n]+', 'ndkVersion = "27.0.12077973"', s)
-          if not count:
-              s = s.replace('android {', 'android {\\n    ndkVersion = "27.0.12077973"', 1)
-          app.write_text(s)
-          print('Configured Kotlin 2.1.0 and Android NDK 27.0.12077973')
+          lines = s.splitlines()
+          updated = False
+          for i, line in enumerate(lines):
+              if 'ndkVersion' in line:
+                  lines[i] = '    ndkVersion = "27.0.12077973"' if app.suffix == '.kts' else '    ndkVersion "27.0.12077973"'
+                  updated = True
+          if not updated:
+              raise SystemExit('NDK declaration not found')
+          app.write_text('\n'.join(lines) + '\n')
+          print('Configured Kotlin 2.1.0 and Android NDK 27')
           PY
       - name: Configure AdMob sample application ID for debug builds
         run: |
