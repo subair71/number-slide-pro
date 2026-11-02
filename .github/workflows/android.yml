@@ -14,6 +14,24 @@ jobs:
           flutter-version: '3.29.3'
       - name: Generate Android platform
         run: flutter create --platforms android --project-name number_slide_pro .
+      - name: Set Android minimum SDK to 23
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          for filename in ('android/app/build.gradle.kts', 'android/app/build.gradle'):
+              p = Path(filename)
+              if not p.exists():
+                  continue
+              s = p.read_text()
+              s = s.replace('minSdk = flutter.minSdkVersion', 'minSdk = 23')
+              s = s.replace('minSdkVersion flutter.minSdkVersion', 'minSdkVersion 23')
+              s = s.replace('minSdkVersion = flutter.minSdkVersion', 'minSdkVersion = 23')
+              p.write_text(s)
+              print(f'Updated {filename} to minSdk 23')
+              break
+          else:
+              raise SystemExit('Android app Gradle file not found')
+          PY
       - name: Configure AdMob sample application ID for debug builds
         run: |
           python3 - <<'PY'
