@@ -1,8 +1,9 @@
-name: Android build check
+name: Android APK build
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,8 +12,16 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - name: Generate Android platform if missing
+      - name: Generate Android platform
         run: flutter create --platforms android --project-name number_slide_pro .
       - run: flutter pub get
-      - run: flutter analyze
-      - run: flutter build apk --debug
+      - name: Analyze source
+        run: flutter analyze
+      - name: Build debug APK
+        run: flutter build apk --debug
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: number-slide-pro-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
