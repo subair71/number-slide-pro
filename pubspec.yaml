@@ -1,0 +1,16 @@
+name: number_slide_pro
+description: Sliding number puzzle with coins, daily challenge, rewarded ads and leaderboard.
+publish_to: none
+version: 1.0.0+1
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.3.2
+  google_mobile_ads: ^5.2.0
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+flutter:
+  uses-material-design: true
