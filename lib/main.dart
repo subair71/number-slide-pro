@@ -132,11 +132,19 @@ class _PuzzlePageState extends State<PuzzlePage> {
     if (widget.online) {
       try {
         final uid = FirebaseAuth.instance.currentUser!.uid;
-        await FirebaseFirestore.instance.collection('leaderboard').doc(uid).set({
-          'name': 'Player ${uid.substring(0, 6)}',
-          'score': score,
-          'size': size,
-          'updatedAt': FieldValue.serverTimestamp(),
+        final entry = FirebaseFirestore.instance.collection('leaderboard').doc('${uid}_$size');
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          final current = await transaction.get(entry);
+          final previous = (current.data()?['score'] as num?)?.toInt() ?? 0;
+          if (score > previous) {
+            transaction.set(entry, {
+              'uid': uid,
+              'name': 'Player ${uid.substring(0, 6)}',
+              'score': score,
+              'size': size,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+          }
         });
       } catch (e) {
         debugPrint('Leaderboard write failed: $e');
@@ -207,7 +215,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
         const Padding(padding: EdgeInsets.all(16), child: Text('🏆 Leaderboard', style: TextStyle(fontSize: 22))),
         if (!widget.online) const Padding(padding: EdgeInsets.all(16), child: Text('Configure Firebase to enable online leaderboard.'))
         else Expanded(child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance.collection('leaderboard').orderBy('score', descending: true).limit(50).snapshots(),
+          stream: FirebaseFirestore.instance.collection('leaderboard').where('size', isEqualTo: size).orderBy('score', descending: true).limit(50).snapshots(),
           builder: (ctx, snapshot) {
             if (snapshot.hasError) return const Center(child: Text('Leaderboard unavailable'));
             if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
