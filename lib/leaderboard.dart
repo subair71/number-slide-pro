@@ -48,5 +48,5 @@ class Leaderboard {
           .where('size', isEqualTo: size)
           .orderBy('score', descending: true)
           .limit(50)
-          .snapshots();
+          .snapshots(includeMetadataChanges: true);
 }

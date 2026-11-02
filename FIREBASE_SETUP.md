@@ -25,3 +25,5 @@ firebase emulators:exec --project demo-number-slide-pro --only auth,firestore "n
 GitHub Actions runs that test, validates the Firebase Android client against the Gradle application ID, runs Flutter analysis and the widget test, and builds a debug APK. An `online-debug-apk` artifact uses the supplied Firebase configuration. An `emulator-debug-apk` artifact connects to the Android emulator's host at `10.0.2.2` with authentication on 9099 and Firestore on 8080.
 
 For a device check, install the online debug APK, solve a board, and tap the bar-chart icon. Verify that the score appears under the correct board size and persists when the app reopens.
+
+On pushes and manual runs with a real Android configuration, a fresh Android emulator signs in, reads the live 4×4 leaderboard from the server, and removes its temporary anonymous account. This check does not create a leaderboard entry.

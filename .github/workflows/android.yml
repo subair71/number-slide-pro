@@ -94,3 +94,14 @@ jobs:
           name: number-slide-pro-${{ steps.firebase.outputs.target }}-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
+      - name: Enable KVM for Android verification
+        if: steps.firebase.outputs.target == 'online' && github.event_name != 'pull_request'
+        run: sudo chmod 666 /dev/kvm
+      - name: Verify Android anonymous sign-in and live leaderboard read
+        if: steps.firebase.outputs.target == 'online' && github.event_name != 'pull_request'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          disable-animations: true
+          script: flutter test integration_test/online_leaderboard_test.dart --dart-define=TEST_FIREBASE_PROJECT=$(jq -r .project_info.project_id android/app/google-services.json)

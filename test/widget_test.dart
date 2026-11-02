@@ -6,9 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   testWidgets('The game renders before an online leaderboard is available', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      const MethodChannel('plugins.flutter.io/google_mobile_ads'),
-      (_) async => null,
+    tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+      'plugins.flutter.io/google_mobile_ads',
+      (_) async => const StandardMethodCodec().encodeSuccessEnvelope(null),
     );
     await tester.pumpWidget(const PuzzleApp());
     await tester.pump();
