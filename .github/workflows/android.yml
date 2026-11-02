@@ -14,6 +14,17 @@ jobs:
           channel: stable
       - name: Generate Android platform
         run: flutter create --platforms android --project-name number_slide_pro .
+      - name: Configure AdMob sample application ID for debug builds
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          s = p.read_text()
+          s = s.replace("<application", '<application android:usesCleartextTraffic="false"', 1)
+          s = s.replace("</application>", '    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>\\n    </application>')
+          s = s.replace('\\n    </application>', '\n    </application>')
+          p.write_text(s)
+          PY
       - run: flutter pub get
       - name: Analyze source
         run: flutter analyze
