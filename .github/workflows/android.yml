@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.29.3'
       - name: Generate Android platform
         run: flutter create --platforms android --project-name number_slide_pro .
       - name: Configure AdMob sample application ID for debug builds
