@@ -32,6 +32,29 @@ jobs:
           else:
               raise SystemExit('Android app Gradle file not found')
           PY
+      - name: Align Android Kotlin and NDK versions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          settings = Path('android/settings.gradle.kts')
+          if not settings.exists():
+              settings = Path('android/settings.gradle')
+          s = settings.read_text()
+          s, count = re.subn(r'(id\\s*\\(?["\\\']org\\.jetbrains\\.kotlin\\.android["\\\']\\)?\\s*version\\s*)["\\\'][^"\\\']+["\\\']', r'\\g<1>"2.1.0"', s)
+          if not count:
+              raise SystemExit('Could not find Kotlin Gradle plugin version')
+          settings.write_text(s)
+          app = Path('android/app/build.gradle.kts')
+          if not app.exists():
+              app = Path('android/app/build.gradle')
+          s = app.read_text()
+          s, count = re.subn(r'ndkVersion\\s*=\\s*[^\\n]+', 'ndkVersion = "27.0.12077973"', s)
+          if not count:
+              s = s.replace('android {', 'android {\\n    ndkVersion = "27.0.12077973"', 1)
+          app.write_text(s)
+          print('Configured Kotlin 2.1.0 and Android NDK 27.0.12077973')
+          PY
       - name: Configure AdMob sample application ID for debug builds
         run: |
           python3 - <<'PY'
