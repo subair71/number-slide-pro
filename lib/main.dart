@@ -233,9 +233,9 @@ class _PuzzlePageState extends State<PuzzlePage> {
   static const _slate = Color(0xFF141B35);
 
   BoxDecoration _glass({double radius = 18}) => BoxDecoration(
-    color: Colors.white.withOpacity(.045),
+    color: Colors.white.withValues(alpha: .045),
     borderRadius: BorderRadius.circular(radius),
-    border: Border.all(color: Colors.white.withOpacity(.10)),
+    border: Border.all(color: Colors.white.withValues(alpha: .10)),
     boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 20, offset: Offset(0, 8))],
   );
 
@@ -274,7 +274,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
         decoration: BoxDecoration(
           color: const Color(0xB8000000),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(.04)),
+          border: Border.all(color: Colors.white.withValues(alpha: .04)),
           boxShadow: const [BoxShadow(color: Color(0xBB000000), blurRadius: 8, offset: Offset(0, 3), blurStyle: BlurStyle.inner)]),
         child: Center(child: Container(width: 6, height: 6,
           decoration: const BoxDecoration(color: Color(0xFF303650), shape: BoxShape.circle))),
@@ -380,7 +380,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(color: const Color(0x77000000),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(.10))),
+                      border: Border.all(color: Colors.white.withValues(alpha: .10))),
                     child: Row(children: [
                       for (final mode in [3, 4, 5])
                         Expanded(child: GestureDetector(
@@ -412,7 +412,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
                     decoration: BoxDecoration(
                       color: const Color(0xBB11182D),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withOpacity(.10)),
+                      border: Border.all(color: Colors.white.withValues(alpha: .10)),
                       boxShadow: const [BoxShadow(color: Color(0x99000000), blurRadius: 26, offset: Offset(0, 12))]),
                     child: GridView.builder(
                       physics: const NeverScrollableScrollPhysics(),
