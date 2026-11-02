@@ -230,7 +230,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
   static const _bg = Color(0xFF070A1B);
   static const _gold = Color(0xFFFBBF24);
   static const _violet = Color(0xFF6366F1);
-  static const _slate = Color(0xFF141B35);
+
 
   BoxDecoration _glass({double radius = 18}) => BoxDecoration(
     color: Colors.white.withValues(alpha: .045),
