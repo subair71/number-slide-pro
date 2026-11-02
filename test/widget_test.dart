@@ -1,9 +1,19 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:number_slide_pro/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('Game app renders title', (tester) async {
-    await tester.pumpWidget(const PuzzleApp(online: false));
-    expect(find.text('Number Slide Pro'), findsOneWidget);
+  testWidgets('The game renders before an online leaderboard is available', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('plugins.flutter.io/google_mobile_ads'),
+      (_) async => null,
+    );
+    await tester.pumpWidget(const PuzzleApp());
+    await tester.pump();
+    expect(find.text('Number Slide'), findsOneWidget);
+    expect(find.text('PRO'), findsOneWidget);
+    expect(find.text('New Game'), findsOneWidget);
   });
 }

@@ -2,26 +2,29 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /leaderboard/{entryId} {
-      allow read: if true;
+      allow get: if request.auth != null;
+      allow list: if request.auth != null && request.query.limit <= 50;
+
       function validEntry() {
+        let data = request.resource.data;
+        let fields = ['uid', 'name', 'score', 'size', 'updatedAt'];
         return request.auth != null
-          && request.resource.data.keys().hasOnly(['uid', 'name', 'score', 'size', 'updatedAt'])
-          && request.resource.data.keys().hasAll(['uid', 'name', 'score', 'size', 'updatedAt'])
-          && request.resource.data.uid == request.auth.uid
-          && entryId == request.auth.uid + '_' + string(request.resource.data.size)
-          && request.resource.data.name is string
-          && request.resource.data.name.size() <= 30
-          && request.resource.data.score is int
-          && request.resource.data.score >= 0
-          && request.resource.data.score <= 2500
-          && request.resource.data.size in [3, 4, 5]
-          && request.resource.data.updatedAt == request.time;
+          && data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+          && data.uid == request.auth.uid
+          && data.size is int && data.size in [3, 4, 5]
+          && entryId == data.uid + '_' + string(data.size)
+          && data.name is string && data.name.size() > 0 && data.name.size() <= 30
+          && data.score is int && data.score > 0
+          && data.score <= data.size * data.size * 100 - 5
+          && (data.score == 1 || data.score % 5 == 0)
+          && data.updatedAt == request.time;
       }
+
       allow create: if validEntry();
       allow update: if validEntry()
         && resource.data.uid == request.auth.uid
+        && request.resource.data.size == resource.data.size
         && request.resource.data.score > resource.data.score;
-      allow delete: if false;
     }
   }
 }

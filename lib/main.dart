@@ -1,40 +1,30 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'leaderboard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await MobileAds.instance.initialize();
-  bool online = false;
-  try {
-    await Firebase.initializeApp();
-    await FirebaseAuth.instance.signInAnonymously();
-    online = FirebaseAuth.instance.currentUser != null;
-  } catch (e) {
-    debugPrint('Firebase not configured: $e');
-  }
-  runApp(PuzzleApp(online: online));
+  runApp(const PuzzleApp());
 }
 
 class PuzzleApp extends StatelessWidget {
-  final bool online;
-  const PuzzleApp({super.key, required this.online});
+  const PuzzleApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
-    home: PuzzlePage(online: online),
+    home: const PuzzlePage(),
   );
 }
 
 class PuzzlePage extends StatefulWidget {
-  final bool online;
-  const PuzzlePage({super.key, required this.online});
+  const PuzzlePage({super.key});
   @override
   State<PuzzlePage> createState() => _PuzzlePageState();
 }
@@ -46,6 +36,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
   List<int> board = [];
   RewardedAd? rewarded;
   SharedPreferences? prefs;
+  final leaderboard = Leaderboard();
 
   @override
   void initState() {
@@ -63,9 +54,19 @@ class _PuzzlePageState extends State<PuzzlePage> {
       best = prefs!.getInt('best_$size') ?? 0;
     });
     _newGame();
+    unawaited(_syncBest(size, best));
+  }
+
+  Future<void> _syncBest(int boardSize, int score) async {
+    try {
+      await leaderboard.submitBest(boardSize, score);
+    } catch (error) {
+      debugPrint('Leaderboard sync deferred: $error');
+    }
   }
 
   void _newGame({bool isDaily = false}) {
+    if (busy) return;
     final rng = isDaily
         ? Random(int.parse(DateTime.now().toIso8601String().substring(0, 10).replaceAll('-', '')) + size)
         : Random();
@@ -129,33 +130,15 @@ class _PuzzlePageState extends State<PuzzlePage> {
       best = score;
       await prefs?.setInt('best_$size', best);
     }
-    if (widget.online) {
-      try {
-        final uid = FirebaseAuth.instance.currentUser!.uid;
-        final entry = FirebaseFirestore.instance.collection('leaderboard').doc('${uid}_$size');
-        await FirebaseFirestore.instance.runTransaction((transaction) async {
-          final current = await transaction.get(entry);
-          final previous = (current.data()?['score'] as num?)?.toInt() ?? 0;
-          if (score > previous) {
-            transaction.set(entry, {
-              'uid': uid,
-              'name': 'Player ${uid.substring(0, 6)}',
-              'score': score,
-              'size': size,
-              'updatedAt': FieldValue.serverTimestamp(),
-            });
-          }
-        });
-      } catch (e) {
-        debugPrint('Leaderboard write failed: $e');
-      }
-    }
+    unawaited(_syncBest(size, best));
     if (!mounted) return;
     await showDialog<void>(context: context, builder: (ctx) => AlertDialog(
       title: const Text('Puzzle solved! 🎉'),
       content: Text('Moves: $moves • Score: $score\n${canReward ? "Coins earned!" : "Daily reward already claimed."}'),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Continue'))],
     ));
+    if (!mounted) return;
+    busy = false;
     _newGame(isDaily: daily);
   }
 
@@ -210,23 +193,44 @@ class _PuzzlePageState extends State<PuzzlePage> {
   }
 
   void _leaderboard() {
-    showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (ctx) => SafeArea(
-      child: SizedBox(height: MediaQuery.sizeOf(ctx).height * .65, child: Column(children: [
-        const Padding(padding: EdgeInsets.all(16), child: Text('🏆 Leaderboard', style: TextStyle(fontSize: 22))),
-        if (!widget.online) const Padding(padding: EdgeInsets.all(16), child: Text('Configure Firebase to enable online leaderboard.'))
-        else Expanded(child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance.collection('leaderboard').where('size', isEqualTo: size).orderBy('score', descending: true).limit(50).snapshots(),
-          builder: (ctx, snapshot) {
-            if (snapshot.hasError) return const Center(child: Text('Leaderboard unavailable'));
-            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-            return ListView.builder(itemCount: snapshot.data!.docs.length, itemBuilder: (ctx, i) {
-              final data = snapshot.data!.docs[i].data();
-              return ListTile(leading: CircleAvatar(child: Text('${i + 1}')), title: Text('${data['name']}'), trailing: Text('${data['score']}'));
-            });
-          },
-        )),
-      ])),
-    ));
+    final boardSize = size;
+    // Retry the locally saved best whenever the player reopens this board.
+    unawaited(_syncBest(boardSize, best));
+    final scores = leaderboard.connect().asStream().asyncExpand((_) => leaderboard.top(boardSize));
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(ctx).height * .65,
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('🏆 $boardSize×$boardSize Leaderboard', style: const TextStyle(fontSize: 22)),
+            ),
+            Expanded(child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: scores,
+              builder: (ctx, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Leaderboard unavailable. Reopen it to retry.'));
+                }
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                final entries = snapshot.data!.docs;
+                if (entries.isEmpty) return const Center(child: Text('No scores yet. Solve a puzzle to enter.'));
+                return ListView.builder(itemCount: entries.length, itemBuilder: (ctx, i) {
+                  final entry = entries[i].data();
+                  return ListTile(
+                    leading: CircleAvatar(child: Text('${i + 1}')),
+                    title: Text('${entry['name']}'),
+                    trailing: Text('${entry['score']}'),
+                  );
+                });
+              },
+            )),
+          ]),
+        ),
+      ),
+    );
   }
 
   @override
@@ -392,7 +396,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
                     child: Row(children: [
                       for (final mode in [3, 4, 5])
                         Expanded(child: GestureDetector(
-                          onTap: () { if (size != mode) { setState(() => size = mode); _newGame(); } },
+                          onTap: () { if (!busy && size != mode) { setState(() => size = mode); _newGame(); } },
                           child: AnimatedContainer(duration: const Duration(milliseconds: 180),
                             height: 38,
                             decoration: size == mode

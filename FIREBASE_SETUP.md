@@ -1,13 +1,27 @@
-# Firebase setup for Number Slide Pro
+# Number Slide Pro on Firebase
 
-1. Create or select a Firebase project at https://console.firebase.google.com/.
-2. Add an Android app. Choose a stable unique application ID (e.g. com.bilvok.numberslidepro) and use the SAME ID in Android Gradle.
-3. Download google-services.json and place it at android/app/google-services.json. Do not commit private credentials or service-account keys.
-4. Install Firebase CLI and FlutterFire CLI; run `firebase login`, `dart pub global activate flutterfire_cli`, then `flutterfire configure --platforms=android`.
-5. Add generated `lib/firebase_options.dart` and initialize Firebase using `DefaultFirebaseOptions.currentPlatform`. The existing `Firebase.initializeApp()` works only when native Android Firebase configuration is correctly generated.
-6. Enable Firebase Authentication → Sign-in method → Anonymous.
-7. Create a Firestore database, then deploy `firestore.rules` and `firestore.indexes.json` with Firebase CLI (`firebase deploy --only firestore`), using a firebase.json pointing to these files.
-8. Test leaderboard reading and writing on an Android device. Queries filter by board size and sort descending by score.
-9. For public launch, do NOT trust client-submitted scores. Implement server-validated submissions, App Check, abuse controls and moderation before allowing competitive rankings.
+## Android and Firebase
 
-Note: This repository does not yet have access to your Firebase project. A GitHub commit does not create or deploy Firebase resources.
+Register the Android app as `com.bilvok.numberslidepro`. Download its Android client configuration from the Firebase project settings. Put the file at `android/app/google-services.json` for local builds. In GitHub Actions, the repository secret `FIREBASE_ANDROID_CONFIG` accepts the complete JSON file. Use the Android client file for this setting.
+
+The checked-in Gradle configuration runs the Google Services plugin. FlutterFire initializes the default app from the generated Android resources, then reuses the current player or signs in anonymously.
+
+## Backend
+
+Enable Anonymous under Firebase Authentication sign-in methods. Create the default Cloud Firestore Standard database in production mode. From this directory deploy to the dedicated game project:
+
+```sh
+firebase deploy --project YOUR_GAME_PROJECT_ID --only firestore
+```
+
+The query filters by `size`, orders by descending `score`, and requests up to 50 records. Wait for the composite index to become ready. Rules permit authenticated leaderboard reads and increasing scores on the player's own document, using the server timestamp and a board-specific score range. The game calculates scores on the client.
+
+## Verification
+
+```sh
+firebase emulators:exec --project demo-number-slide-pro --only auth,firestore "node --test test/leaderboard-emulators.mjs"
+```
+
+GitHub Actions runs that test, validates the Firebase Android client against the Gradle application ID, runs Flutter analysis and the widget test, and builds a debug APK. An `online-debug-apk` artifact uses the supplied Firebase configuration. An `emulator-debug-apk` artifact connects to the Android emulator's host at `10.0.2.2` with authentication on 9099 and Firestore on 8080.
+
+For a device check, install the online debug APK, solve a board, and tap the bar-chart icon. Verify that the score appears under the correct board size and persists when the app reopens.
