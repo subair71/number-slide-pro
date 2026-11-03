@@ -7,8 +7,8 @@ flutter build apk --debug --dart-define=FIREBASE_EMULATORS=true
 adb install -r -t build/app/outputs/flutter-apk/app-debug.apk
 package=com.bilvok.numberslidepro
 adb shell pm clear "$package" >/dev/null
-adb shell wm size 780x1688
-adb shell wm density 320
+adb shell wm size 390x1168
+adb shell wm density 160
 adb shell wm size
 adb shell wm density
 adb shell settings put system accelerometer_rotation 0
@@ -64,8 +64,7 @@ for path in sorted(Path("arcade-previews").glob("*.png")):
     assert header.startswith(b"\x89PNG\r\n\x1a\n"), path.name
     size = unpack(">II", header[16:24])
     assert min(size) > 0, (path.name, size)
-    if not path.name.startswith("stitch-"):
-        framebuffer_sizes.add(tuple(sorted(size)))
+    framebuffer_sizes.add(tuple(sorted(size)))
     assert (size[0] > size[1]) == ("landscape" in path.name), (path.name, size)
     print(f"{path.name}: {size[0]} x {size[1]}")
 assert len(framebuffer_sizes) == 1, framebuffer_sizes
