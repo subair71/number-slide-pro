@@ -7,6 +7,9 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 // ignore: implementation_imports
 import 'package:google_mobile_ads/src/ad_instance_manager.dart' show AdMessageCodec;
 import 'package:number_slide_pro/main.dart';
+import 'package:number_slide_pro/run_results.dart';
+import 'package:number_slide_pro/vault_items.dart';
+import 'package:number_slide_pro/theme_vault.dart';
 import 'package:number_slide_pro/puzzle_board.dart';
 import 'package:number_slide_pro/leaderboard.dart';
 import 'package:number_slide_pro/leaderboard_sheet.dart';
@@ -170,17 +173,64 @@ void main() {
       }
       if (round == 0) {
         await tester.pump(const Duration(milliseconds: 240));
-        expect(find.text('Puzzle solved!'), findsNothing);
+        expect(find.byType(RunResults), findsNothing);
       }
       await tester.pumpAndSettle();
-      expect(find.text('Puzzle solved!'), findsOneWidget);
-      expect(find.text('Score · ${route.length} moves'), findsOneWidget);
-      expect(find.text(round == 0 ? '+100 coins' : '+0 coins'), findsOneWidget);
-      expect(prefs.getInt('coins'), 100);
+      final result = tester.widget<RunResults>(find.byType(RunResults)).run;
+      expect(result.moves, route.length);
+      expect(result.coins, round == 0 ? 100 : 0);
+      expect(result.gems, round == 0 ? 25 : 0);
+      expect(PlayerProgress.read(prefs).coins, 100);
+      expect(PlayerProgress.read(prefs).gems, 25);
       expect(prefs.getInt('best_3'), 900 - route.length * 5);
-      await tester.tap(find.text('Continue'));
+      await tester.scrollUntilVisible(find.text('Next Puzzle'), 350,
+        scrollable: find.descendant(of: find.byKey(const Key('results-scroll')), matching: find.byType(Scrollable)).first);
+      await tester.tap(find.text('Next Puzzle'));
       await tester.pumpAndSettle();
+      if (round == 0) {
+        await tester.ensureVisible(find.text('Daily Challenge'));
+        await tester.tap(find.text('Daily Challenge'));
+        await tester.pumpAndSettle();
+      }
     }
+  });
+
+  testWidgets('Vault previews a locked skin and charges only once when equipped', (tester) async {
+    SharedPreferences.setMockInitialValues({'coins': 900});
+    tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+      'plugins.flutter.io/google_mobile_ads', (_) async => const StandardMethodCodec().encodeSuccessEnvelope(null));
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    await tester.pumpWidget(const PuzzleApp());
+    await tester.pumpAndSettle();
+    final prefs = await SharedPreferences.getInstance();
+    await tester.tap(find.text('SHOP'));
+    await tester.pumpAndSettle();
+    expect(find.text('THEME VAULT'), findsOneWidget);
+    await tester.ensureVisible(find.text('Synthwave Sunset'));
+    await tester.tap(find.text('Synthwave Sunset'));
+    await tester.pump();
+    await tester.tap(find.text('Preview on Board'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<PuzzleBoard>(find.byType(PuzzleBoard)).skin.id, 'sunset');
+    expect(PlayerProgress.read(prefs).coins, 900);
+    await tester.tap(find.textContaining('Back to vault'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Equip Theme ✓'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Unlock & Equip'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Equip Theme ✓'));
+    await tester.pumpAndSettle();
+    final saved = PlayerProgress.read(prefs);
+    expect(saved.active(VaultTab.skins).id, 'sunset');
+    expect(saved.coins, 100);
+    await tester.tap(find.byTooltip('Close vault'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ThemeVault), findsNothing);
+    expect(tester.widget<PuzzleBoard>(find.byType(PuzzleBoard)).skin.id, 'sunset');
   });
 
   testWidgets('Leaderboard tabs replace the feed and distinguish cached, empty and personal scores', (tester) async {
