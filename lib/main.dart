@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'game_banner.dart';
 import 'leaderboard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -320,8 +321,13 @@ class _PuzzlePageState extends State<PuzzlePage> {
   Widget build(BuildContext context) {
     final screen = MediaQuery.sizeOf(context);
     final boardWidth = min(screen.width - 44, 380.0);
+    final bannerWidth = (screen.width - MediaQuery.paddingOf(context).horizontal).floor();
     return Scaffold(
       backgroundColor: _bg,
+      bottomNavigationBar: GameBanner(
+        key: ValueKey((bannerWidth, MediaQuery.orientationOf(context))),
+        width: bannerWidth,
+      ),
       body: Stack(children: [
         Positioned(top: -120, left: -60, right: -60, height: 400,
           child: IgnorePointer(child: Container(decoration: const BoxDecoration(

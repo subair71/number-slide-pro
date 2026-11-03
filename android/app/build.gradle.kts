@@ -23,6 +23,8 @@ android {
     defaultConfig {
 
         applicationId = "com.bilvok.numberslidepro"
+        manifestPlaceholders["adMobAppId"] = providers.environmentVariable("ADMOB_ANDROID_APP_ID")
+            .getOrElse("ca-app-pub-3940256099942544~3347511713")
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23
