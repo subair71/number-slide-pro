@@ -165,7 +165,7 @@ class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateM
       context: context, barrierDismissible: false, barrierLabel: 'Puzzle result',
       transitionDuration: still ? Duration.zero : const Duration(milliseconds: 160),
       pageBuilder: (ctx, _, __) => AlertDialog(
-        backgroundColor: panel,
+        scrollable: true, backgroundColor: panel,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22), side: const BorderSide(color: seam)),
         icon: const Icon(Icons.emoji_events_outlined, size: 38, color: amber),
         title: const Text('Puzzle solved!', style: TextStyle(fontWeight: FontWeight.w900)),

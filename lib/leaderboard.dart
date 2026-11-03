@@ -51,7 +51,7 @@ class Leaderboard {
           .snapshots(includeMetadataChanges: true);
 
   Stream<Standings> standings(int size) async* {
-    final player = await connect();
+    final player = await connect().timeout(const Duration(seconds: 12));
     await for (final snapshot in top(size)) {
       yield Standings(
         cached: snapshot.metadata.isFromCache,

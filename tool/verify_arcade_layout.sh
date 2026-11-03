@@ -49,11 +49,14 @@ wait_for_label 'Tile 24'
 adb exec-out screencap -p > arcade-previews/landscape-5x5.png
 python3 - <<'PY'
 from pathlib import Path
-from PIL import Image
+from struct import unpack
 
 for path in sorted(Path("arcade-previews").glob("*.png")):
-    with Image.open(path) as image:
-        expected = (1688, 780) if "landscape" in path.name else (780, 1688)
-        assert image.size == expected, (path.name, image.size, expected)
-        print(f"{path.name}: {image.width} x {image.height}")
+    with path.open("rb") as png:
+        header = png.read(24)
+    assert header.startswith(b"\x89PNG\r\n\x1a\n"), path.name
+    size = unpack(">II", header[16:24])
+    expected = (1688, 780) if "landscape" in path.name else (780, 1688)
+    assert size == expected, (path.name, size, expected)
+    print(f"{path.name}: {size[0]} x {size[1]}")
 PY

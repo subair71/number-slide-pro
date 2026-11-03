@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'arcade.dart';
@@ -56,7 +57,7 @@ class _LeaderboardSheetState extends State<LeaderboardSheet> {
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               final error = snapshot.error;
-              final offline = error is FirebaseException &&
+              final offline = error is TimeoutException || error is FirebaseException &&
                 ['unavailable', 'network-request-failed', 'deadline-exceeded'].contains(error.code);
               return _notice(offline ? Icons.cloud_off : Icons.leaderboard_outlined,
                 offline ? 'You’re offline' : 'Standings unavailable',

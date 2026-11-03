@@ -138,6 +138,51 @@ void main() {
     }
   });
 
+  testWidgets('Solving the daily puzzle sweeps the board and only pays the daily reward once', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+      'plugins.flutter.io/google_mobile_ads', (_) async => const StandardMethodCodec().encodeSuccessEnvelope(null),
+    );
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    await tester.pumpWidget(const PuzzleApp());
+    await tester.pump();
+    await tester.tap(find.text('3×3'));
+    await tester.pump();
+    await tester.tap(find.text('Daily Challenge'));
+    await tester.pumpAndSettle();
+    final route = _solution(tester.widget<PuzzleBoard>(find.byType(PuzzleBoard)).tiles);
+    final prefs = await SharedPreferences.getInstance();
+    for (int round = 0; round < 2; round++) {
+      if (round == 1) {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        await tester.pump();
+      }
+      for (int step = 0; step < route.length; step++) {
+        await tester.tap(find.byKey(ValueKey(route[step])));
+        await tester.pump();
+        if (step + 1 < route.length) {
+          await tester.pump(const Duration(milliseconds: 170));
+        }
+      }
+      if (round == 0) {
+        await tester.pump(const Duration(milliseconds: 240));
+        expect(find.text('Puzzle solved!'), findsNothing);
+      }
+      await tester.pumpAndSettle();
+      expect(find.text('Puzzle solved!'), findsOneWidget);
+      expect(find.text('Score · ${route.length} moves'), findsOneWidget);
+      expect(find.text(round == 0 ? '+100 coins' : '+0 coins'), findsOneWidget);
+      expect(prefs.getInt('coins'), 100);
+      expect(prefs.getInt('best_3'), 900 - route.length * 5);
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+    }
+  });
+
   testWidgets('Leaderboard tabs replace the feed and distinguish cached, empty and personal scores', (tester) async {
     final feeds = <int, StreamController<Standings>>{};
     addTearDown(() async {
@@ -166,4 +211,30 @@ void main() {
 
 class _NoFill extends LoadAdError {
   _NoFill() : super(3, 'test', 'No fill', null);
+}
+
+List<int> _solution(List<int> board) {
+  const goal = '123456780';
+  final start = board.join();
+  final next = {goal: goal};
+  final queue = [goal];
+  for (int cursor = 0; !next.containsKey(start); cursor++) {
+    final state = queue[cursor];
+    final gap = state.indexOf('0');
+    for (final pos in [if (gap % 3 > 0) gap - 1, if (gap % 3 < 2) gap + 1,
+      if (gap >= 3) gap - 3, if (gap < 6) gap + 3]) {
+      final cells = state.split('');
+      cells[gap] = cells[pos];
+      cells[pos] = '0';
+      final previous = cells.join();
+      if (next.containsKey(previous)) continue;
+      next[previous] = state;
+      queue.add(previous);
+    }
+  }
+  final moves = <int>[];
+  for (var state = start; state != goal; state = next[state]!) {
+    moves.add(int.parse(state[next[state]!.indexOf('0')]));
+  }
+  return moves;
 }
