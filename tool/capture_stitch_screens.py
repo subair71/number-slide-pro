@@ -36,7 +36,7 @@ def find(text, *, tap=False):
                     time.sleep(.35)
                 return
         time.sleep(.4)
-    raise RuntimeError("Missing Android element: " + text)
+    raise RuntimeError(f"Missing Android element {text!r}; visible labels: {[label(n) for n in nodes() if label(n)]}")
 
 
 def screenshot(name):
@@ -46,7 +46,7 @@ def screenshot(name):
 find("shop", tap=True)
 find("THEME VAULT")
 screenshot("portrait-theme-vault.png")
-find("Close vault", tap=True)
+find("Play", tap=True)
 find("3 by 3 grid", tap=True)
 find("Tile 8")
 positions = {}
@@ -102,7 +102,13 @@ time.sleep(.7)
 if "[review previews]" in subprocess.check_output(["git", "log", "-1", "--format=%s"], text=True):
     import base64
     from io import BytesIO
-    from PIL import Image
+    try:
+        from PIL import Image
+    except ImportError:
+        import sys
+        subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "--target", "/tmp/arcade-preview-pil", "Pillow==11.3.0"], check=True)
+        sys.path.insert(0, "/tmp/arcade-preview-pil")
+        from PIL import Image
 
     sheet = Image.new("RGB", (900, 600))
     for i, name in enumerate(("portrait-theme-vault.png", "portrait-run-results.png", "portrait-run-rewards.png")):
