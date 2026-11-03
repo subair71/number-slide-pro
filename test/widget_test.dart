@@ -211,9 +211,12 @@ void main() {
     await tester.tap(find.text('SHOP'));
     await tester.pumpAndSettle();
     expect(find.text('THEME VAULT'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Synthwave Sunset'), 160, scrollable:
+    await tester.scrollUntilVisible(find.text('Synthwave Sunset').hitTestable(), 90, scrollable:
       find.descendant(of: find.byKey(const Key('vault-list')), matching: find.byType(Scrollable)).first);
-    await tester.tap(find.text('Synthwave Sunset'));
+    await tester.pumpAndSettle();
+    await Scrollable.ensureVisible(tester.element(find.text('Synthwave Sunset')), alignment: .45);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Synthwave Sunset').hitTestable());
     await tester.pump();
     await tester.tap(find.text('Preview on Board'));
     await tester.pumpAndSettle();
