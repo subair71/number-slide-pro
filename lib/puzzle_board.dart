@@ -65,7 +65,7 @@ class PuzzleBoard extends StatelessWidget {
                           child: DecoratedBox(
                             decoration: tileFinish(skin),
                             child: Center(child: Text('${tiles[i]}', textScaler: TextScaler.noScaling,
-                              style: TextStyle(fontFamily: 'Lilita', color: skin.id == 'sunset' ? const Color(0xFFFFE4A0) : Colors.white, fontSize: math.min(side * .43, 40.0),
+                              style: TextStyle(fontFamily: 'Fredoka', fontVariations: const [FontVariation('wght', 680)], color: skin.id == 'sunset' ? const Color(0xFFFFE4A0) : Colors.white, fontSize: math.min(side * .43, 40.0),
                                 fontFeatures: figures, height: 1, fontWeight: FontWeight.w800)))),
                         ),
                         if (skin.id == 'matrix') const IgnorePointer(child: CustomPaint(painter: Scanlines())),

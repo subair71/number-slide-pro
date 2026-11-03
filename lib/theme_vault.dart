@@ -87,7 +87,7 @@ class _ThemeVaultState extends State<ThemeVault> {
         )))),
   ]));
 
-  Widget _preview(double width) {
+  Widget _preview(double side) {
     final skin = selected.tab == VaultTab.skins ? selected : widget.progress.active(VaultTab.skins);
     final frame = selected.tab == VaultTab.frames ? selected : widget.progress.active(VaultTab.frames);
     final trail = selected.tab == VaultTab.trails ? selected : widget.progress.active(VaultTab.trails);
@@ -102,7 +102,7 @@ class _ThemeVaultState extends State<ThemeVault> {
               style: chunky(10, neon)))),
         ]),
         const SizedBox(height: 10),
-        Container(width: math.min(width * .56, 192), padding: const EdgeInsets.all(7),
+        Container(width: side, padding: const EdgeInsets.all(7),
           decoration: vaultBox(frame.bottom, edge: frame.id == 'carbon' ? const Color(0xFF095B70) : frame.top, radius: 12),
           child: AspectRatio(aspectRatio: 1, child: GridView.count(primary: false, padding: EdgeInsets.zero,
             physics: const NeverScrollableScrollPhysics(), crossAxisCount: 3, mainAxisSpacing: 5, crossAxisSpacing: 5,
@@ -142,7 +142,7 @@ class _ThemeVaultState extends State<ThemeVault> {
                 decoration: vaultBox(color.withValues(alpha: .13), edge: color.withValues(alpha: .55), radius: 4),
                 child: Text(badge, style: chunky(9, color))),
             ]),
-            const SizedBox(height: 3), Text(item.description, style: const TextStyle(fontSize: 11, height: 1.14, color: Color(0xFFD5D7E9))),
+            const SizedBox(height: 3), Text(item.description, style: const TextStyle(fontSize: 11, height: 1.14, color: Color(0xFFD5D7E9), fontVariations: [FontVariation('wght', 530)])),
           ])),
           const SizedBox(width: 5),
           InkWell(onTap: () { setState(() => selected = item); if (!equipped) _equip(); },
@@ -179,7 +179,7 @@ class _ThemeVaultState extends State<ThemeVault> {
             Container(width: double.infinity, color: vaultPanel, padding: const EdgeInsets.fromLTRB(12, 6, 6, 9), child: _tabs()),
             const Divider(height: 1, color: vaultEdge),
             Expanded(child: ListView(key: const Key('vault-list'), controller: scroll, padding: const EdgeInsets.fromLTRB(12, 12, 12, 10), children: [
-              _preview(width),
+              _preview(math.min(math.min(width * .56, 192.0), height * .24)),
               Padding(padding: const EdgeInsets.only(top: 15), child: Row(children: [
                 Expanded(child: Text('FEATURED $noun', style: chunky(13))),
                 Text('${items.length} Items Available', style: chunky(11, hotPink)),

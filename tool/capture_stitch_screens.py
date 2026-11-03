@@ -46,6 +46,16 @@ def screenshot(name):
 find("shop", tap=True)
 find("THEME VAULT")
 screenshot("portrait-theme-vault.png")
+# Also render at the tall aspect ratio of the supplied Stitch references.
+def viewport(size, density):
+    adb("shell", "wm", "size", size)
+    adb("shell", "wm", "density", density)
+    time.sleep(.9)
+
+viewport("390x1168", 160)
+find("THEME VAULT")
+screenshot("stitch-theme-vault.png")
+viewport("780x1688", 320)
 find("Play", tap=True)
 find("3 by 3 grid", tap=True)
 find("Tile 8")
@@ -89,6 +99,10 @@ if not commands:
 adb("shell", "; ".join(commands))
 find("HARMONIC ALIGNMENT")
 screenshot("portrait-run-results.png")
+viewport("320x1254", 160)
+find("HARMONIC ALIGNMENT")
+screenshot("stitch-run-results.png")
+viewport("780x1688", 320)
 for _ in range(2):
     # Touch coordinates above were returned by UIAutomator in logical-display pixels.
     adb("shell", "input", "swipe", xs[1], ys[-1], xs[1], max(24, ys[0]//3), 320)
@@ -110,11 +124,11 @@ if "[review previews]" in subprocess.check_output(["git", "log", "-1", "--format
         sys.path.insert(0, "/tmp/arcade-preview-pil")
         from PIL import Image
 
-    sheet = Image.new("RGB", (900, 600))
-    for i, name in enumerate(("portrait-theme-vault.png", "portrait-run-results.png", "portrait-run-rewards.png")):
+    sheet = Image.new("RGB", (1050, 760))
+    for i, name in enumerate(("stitch-theme-vault.png", "stitch-run-results.png", "portrait-run-rewards.png")):
         with Image.open(DEST / name) as img:
-            img.thumbnail((300, 600))
-            sheet.paste(img.convert("RGB"), (300*i, 0))
+            img.thumbnail((350, 760))
+            sheet.paste(img.convert("RGB"), (350*i, 0))
     encoded = BytesIO()
     sheet.save(encoded, format="JPEG", quality=83)
     print("::group::Emulator screen thumbnails")

@@ -21,9 +21,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   fonts:
-    - family: Lilita
+    - family: Fredoka
       fonts:
-        - asset: assets/fonts/LilitaOne.ttf
+        - asset: assets/fonts/FredokaOne.ttf
     - family: Outfit
       fonts:
         - asset: assets/fonts/Outfit.ttf

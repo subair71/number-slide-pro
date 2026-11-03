@@ -40,7 +40,7 @@ class RunResults extends StatelessWidget {
   Widget _info(String title, String value, IconData icon) => Expanded(child: Row(children: [
     Icon(icon, color: paper, size: 18), const SizedBox(width: 9),
     Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+      Text(title, style: const TextStyle(fontVariations: [FontVariation('wght', 630)], fontWeight: FontWeight.w700, fontSize: 13)),
       const SizedBox(height: 5), Text(value, style: chunky(14)),
     ])),
   ]));
@@ -49,7 +49,7 @@ class RunResults extends StatelessWidget {
     padding: EdgeInsets.all(padding), color: const Color(0x4D070717), child: child,
   );
   Widget _metric(String title, String value, String detail) => Expanded(child: Column(children: [
-    Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+    Text(title, textAlign: TextAlign.center, style: const TextStyle(fontVariations: [FontVariation('wght', 650)], fontSize: 13)),
     const SizedBox(height: 9), Text(value, textAlign: TextAlign.center, style: chunky(18)),
     Text(detail, textAlign: TextAlign.center, style: chunky(12)),
   ]));
@@ -77,7 +77,7 @@ class RunResults extends StatelessWidget {
               textAlign: TextAlign.center, style: chunky(17).copyWith(letterSpacing: 1.4)),
             const SizedBox(height: 40),
             Text('${run.mode} ${run.size}×${run.size} Slider · Speedrun Blitz', textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              style: const TextStyle(fontSize: 15, fontVariations: [FontVariation('wght', 650)])),
             const SizedBox(height: 12),
             Row(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
               const Icon(Icons.star_border_rounded, size: 33, color: paper), const SizedBox(width: 22),
@@ -123,9 +123,10 @@ class RunResults extends StatelessWidget {
             _section(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _label('SPEEDRUN TELEMETRY'), const SizedBox(height: 20),
               FutureBuilder<String>(future: rank, builder: (_, state) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _metric('GLOBAL RANK', state.data ?? '…', 'Best score'),
-                _metric('COMBO RUN', '${run.combo}×', 'Chained slides'),
-                _metric('PATH RATING', run.grade, run.grade == 'S+' ? 'Flawless' : 'Slide accuracy'),
+                _metric('GLOBAL\nRANK', state.data == 'Unavailable' || state.data == 'Unranked' ? '—' : state.data ?? '…',
+                  state.data == 'Unavailable' ? 'Offline' : state.data == 'Unranked' ? 'Unranked' : 'Best score'),
+                _metric('COMBO\nRUN', '${run.combo}×', 'Chained slides'),
+                _metric('PATH\nRATING', run.grade, run.grade == 'S+' ? 'Flawless' : 'Slide accuracy'),
               ])),
               const SizedBox(height: 14), Center(child: _label('Score · ${run.score}', size: 12)),
             ])),

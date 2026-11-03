@@ -26,6 +26,7 @@ class PuzzleApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     theme: ThemeData(useMaterial3: true, fontFamily: 'Outfit', brightness: Brightness.dark,
+      textTheme: const TextTheme(bodyMedium: TextStyle(fontFamily: 'Outfit', fontVariations: [FontVariation('wght', 500)])),
       scaffoldBackgroundColor: midnight, colorScheme: ColorScheme.fromSeed(seedColor: violet,
         brightness: Brightness.dark).copyWith(primary: cyan, surface: panel)),
     title: 'Number Slide Pro',
@@ -480,7 +481,7 @@ class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateM
     }, child: Scaffold(
       bottomNavigationBar: SafeArea(top: false, child: Column(mainAxisSize: MainAxisSize.min, children: [
         ArcadeNav(selected: _shop ? 2 : 0, onSelect: _navigate),
-        GameBanner(key: ValueKey((bannerWidth, MediaQuery.orientationOf(context))), width: bannerWidth),
+        if (!_shop) GameBanner(key: ValueKey((bannerWidth, MediaQuery.orientationOf(context))), width: bannerWidth),
       ])),
       body: Stack(fit: StackFit.expand, children: [
         ExcludeSemantics(excluding: _shop, child: IgnorePointer(ignoring: _shop, child: CustomPaint(painter: const ArcadeBackdrop(), child: SafeArea(child: LayoutBuilder(

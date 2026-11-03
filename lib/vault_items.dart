@@ -101,7 +101,7 @@ class PlayerProgress {
 }
 
 TextStyle chunky(double size, [Color color = paper]) =>
-    TextStyle(fontFamily: 'Lilita', fontSize: size, height: 1.08, color: color);
+    TextStyle(fontFamily: 'Fredoka', fontVariations: const [FontVariation('wght', 690)], fontSize: size, height: 1.10, color: color);
 
 String grouped(int amount) => amount.toString().replaceAllMapped(
   RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
