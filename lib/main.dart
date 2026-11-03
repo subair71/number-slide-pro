@@ -13,10 +13,15 @@ import 'puzzle_board.dart';
 import 'theme_vault.dart';
 import 'vault_items.dart';
 import 'run_results.dart';
+import 'privacy.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await MobileAds.instance.initialize();
+  const bannerUnit = String.fromEnvironment('ADMOB_ANDROID_BANNER_UNIT_ID');
+  const rewardedUnit = String.fromEnvironment('ADMOB_ANDROID_REWARDED_UNIT_ID');
+  if (!kReleaseMode || bannerUnit.isNotEmpty || rewardedUnit.isNotEmpty) {
+    await MobileAds.instance.initialize();
+  }
   runApp(const PuzzleApp());
 }
 
@@ -343,10 +348,17 @@ class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateM
               child: const Text('Share challenge')),
             VaultButton('Community leaderboard', () => Navigator.pop(ctx, 'rank'), bright: true),
           ] else VaultButton(done ? 'Replay daily puzzle' : 'Play daily puzzle', () => Navigator.pop(ctx, 'daily'), bright: true),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'privacy'), child: const Text('Privacy & data')),
         ]))));
     if (!mounted) return;
     _overlay = false;
-    if (selected == 'daily') { _newGame(isDaily: true); }
+    if (selected == 'privacy') {
+      _overlay = true;
+      await PrivacyPage.open(context);
+      if (!mounted) return;
+      _overlay = false;
+      _resumeClock();
+    } else if (selected == 'daily') { _newGame(isDaily: true); }
     else if (selected == 'rank') { await _leaderboard(); }
     else { _resumeClock(); }
   }

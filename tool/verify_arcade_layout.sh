@@ -3,12 +3,26 @@ set -euo pipefail
 trap 'echo "Layout check failed at line $LINENO" >&2' ERR
 
 # Render the actual Android screen without writing scores to the live leaderboard.
-flutter build apk --debug --dart-define=FIREBASE_EMULATORS=true
-adb install -r -t build/app/outputs/flutter-apk/app-debug.apk
+if [[ -n "${PLAY_RELEASE_APK:-}" ]]; then
+  # Capture this exact release without sending screenshot-run scores to live Firebase.
+  adb shell cmd connectivity airplane-mode enable
+  adb shell svc wifi disable
+  adb shell svc data disable
+  adb install -r "$PLAY_RELEASE_APK"
+else
+  flutter build apk --debug --dart-define=FIREBASE_EMULATORS=true
+  adb install -r -t build/app/outputs/flutter-apk/app-debug.apk
+fi
 package=com.bilvok.numberslidepro
 adb shell pm clear "$package" >/dev/null
-adb shell wm size 390x1168
-adb shell wm density 160
+adb shell wm size "${CAPTURE_RESOLUTION:-390x1168}"
+adb shell wm density "${CAPTURE_DENSITY:-160}"
+if [[ -n "${PLAY_RELEASE_APK:-}" ]]; then
+  adb shell settings put secure sysui_demo_allowed 1
+  adb shell am broadcast -a com.android.systemui.demo -e command enter >/dev/null
+  adb shell am broadcast -a com.android.systemui.demo -e command clock -e hhmm 0941 >/dev/null
+  adb shell am broadcast -a com.android.systemui.demo -e command notifications -e visible false >/dev/null
+fi
 adb shell wm size
 adb shell wm density
 adb shell settings put system accelerometer_rotation 0

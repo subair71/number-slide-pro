@@ -11,6 +11,8 @@ Flutter sliding puzzle with 3×3, 4×4 and 5×5 boards, coins, a daily challenge
 
 See [Firebase setup](FIREBASE_SETUP.md) for backend deployment, tests and Android build artifacts. Debug builds use Google's sample AdMob application, rewarded ad, and adaptive banner. The Android banner sits below the game controls and appears only after an ad loads.
 
+For the Play Store bundle, upload signing, release APK, screenshots and privacy policy, see [First Google Play release](play/FIRST_UPLOAD.md).
+
 ## Connect the Android game to your AdMob account
 
 In AdMob, choose the Android app for `com.bilvok.numberslidepro`. Copy its app ID and the two unit IDs for its banner and rewarded placements. Add these [GitHub Actions repository variables](https://github.com/subair71/number-slide-pro/settings/variables/actions):
@@ -21,7 +23,7 @@ In AdMob, choose the Android app for `com.bilvok.numberslidepro`. Copy its app I
 | `ADMOB_ANDROID_BANNER_UNIT_ID` | Banner ad unit ID containing `/` |
 | `ADMOB_ANDROID_REWARDED_UNIT_ID` | Rewarded ad unit ID containing `/` |
 
-Run **Android APK build** on `main`. When all three IDs pass validation, the workflow builds a separate `publisher-release-apk` artifact for installation. The current Android Gradle configuration signs this APK with the debug key. The artifact name identifies whether its leaderboard uses Firebase emulators or the online project.
+Run **Android APK build** on `main`. When all three IDs pass validation, the workflow builds a separate `publisher-release-apk` artifact for installation. CI signs this sideload preview with the debug key. The artifact name identifies whether its leaderboard uses Firebase emulators or the online project.
 
 For a local build, export those same three variables, then run:
 

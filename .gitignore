@@ -5,3 +5,8 @@ android/app/google-services.json
 build/
 android/local.properties
 android/.gradle/
+
+*.jks
+*.keystore
+android/key.properties
+play-package/

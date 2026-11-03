@@ -1,0 +1,33 @@
+Number Slide Pro
+Privacy policy
+Effective 3 November 2026
+
+Subair K M, operating as Bilvok Technologies, provides Number Slide Pro for Android (com.bilvok.numberslidepro). This policy covers the game, its leaderboard, and information used to provide them.
+
+On your device
+The game saves preferences, best scores and times, daily completions, streaks, coins, gems, XP, and owned and equipped themes in app storage. These balances and purchases use game currency. Clearing the app’s storage removes this local progress. Android may back up or restore app data according to your device settings.
+
+Online scores
+The game signs in to Google Firebase anonymously to identify your scores across sessions on this installation. Firebase assigns a player ID. When a best score is synced, Cloud Firestore stores that ID, a generated player name based on part of the ID, the board size, the score, and a server timestamp. Other signed-in players can see leaderboard entries, including your generated name and score. The stored player ID and timestamp are part of the records accessible to authenticated clients. Firebase also processes network and device information such as IP addresses and user agents to operate and secure the service.
+
+Advertising
+The game supports banner ads and optional rewarded videos. Their availability depends on the build and whether an ad is available. When Google Mobile Ads is active, Google and its advertising partners may process IP addresses (including to estimate approximate location), device or advertising identifiers, ad and app interactions, and diagnostic information. This supports ad delivery, measurement and fraud prevention. You can manage advertising privacy controls in Android settings. Watching a rewarded ad can add game coins to your local balance.
+
+Sharing
+When you choose Share Run or Share Challenge, Android lets you select the destination. The shared text can include your board size, score, time and move count. On devices without the share interface, the app may copy the text to the device clipboard.
+
+Storage and deletion
+Firebase requests use encrypted connections, and the leaderboard uses authentication and database access rules. We retain online player records and best scores to maintain the leaderboard until we process a verified deletion request or discontinue the records. Google manages technical and security logs under its own retention schedules. Clearing storage or uninstalling the app does not remove a score that was already uploaded.
+
+For access, correction or deletion, open Quests → Privacy & data and copy your player ID before clearing the app. Contact Bilvok Technologies privately using the business support channel below. Identify Number Slide Pro and describe your request. We may need further information to verify ownership before removing the Firebase player and associated scores. Avoid sending passwords or posting player IDs in a public issue.
+
+Privacy contact
+Bilvok Technologies: https://www.bilvok.com/
+Private support and deletion requests: https://wa.me/916282346633
+
+Provider information
+Firebase privacy and security: https://firebase.google.com/support/privacy
+Google services used by apps: https://policies.google.com/technologies/partner-sites
+
+Updates
+Changes to this policy will be published with an updated effective date.

@@ -123,6 +123,7 @@ jobs:
       - name: Build APK with publisher ad units
         if: steps.publisher.outputs.configured == 'true'
         env:
+          SIGN_PREVIEW_APK_WITH_DEBUG_KEY: "true"
           USE_EMULATORS: ${{ steps.firebase.outputs.target == 'emulator' }}
           ADMOB_ANDROID_APP_ID: ${{ vars.ADMOB_ANDROID_APP_ID }}
           BANNER_ID: ${{ vars.ADMOB_ANDROID_BANNER_UNIT_ID }}
