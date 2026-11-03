@@ -178,7 +178,7 @@ class _ThemeVaultState extends State<ThemeVault> {
             ])),
             Container(width: double.infinity, color: vaultPanel, padding: const EdgeInsets.fromLTRB(12, 6, 6, 9), child: _tabs()),
             const Divider(height: 1, color: vaultEdge),
-            Expanded(child: ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(12, 12, 12, 10), children: [
+            Expanded(child: ListView(key: const Key('vault-list'), controller: scroll, padding: const EdgeInsets.fromLTRB(12, 12, 12, 10), children: [
               _preview(width),
               Padding(padding: const EdgeInsets.only(top: 15), child: Row(children: [
                 Expanded(child: Text('FEATURED $noun', style: chunky(13))),

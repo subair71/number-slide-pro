@@ -43,12 +43,21 @@ class Leaderboard {
     });
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> top(int size) =>
+  Query<Map<String, dynamic>> _topQuery(int size) =>
       FirebaseFirestore.instance.collection('leaderboard')
           .where('size', isEqualTo: size)
           .orderBy('score', descending: true)
-          .limit(50)
-          .snapshots(includeMetadataChanges: true);
+          .limit(50);
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> top(int size) =>
+      _topQuery(size).snapshots(includeMetadataChanges: true);
+
+  Future<int?> bestRank(int size) async {
+    final player = await connect();
+    final snapshot = await _topQuery(size).get(const GetOptions(source: Source.server));
+    final index = snapshot.docs.indexWhere((doc) => doc.data()['uid'] == player.uid);
+    return index < 0 ? null : index + 1;
+  }
 
   Stream<Standings> standings(int size) async* {
     final player = await connect().timeout(const Duration(seconds: 12));

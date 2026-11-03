@@ -193,6 +193,8 @@ void main() {
         await tester.pumpAndSettle();
       }
     }
+    // No Firebase platform channel responds in this widget test.
+    await tester.pump(const Duration(seconds: 9));
   });
 
   testWidgets('Vault previews a locked skin and charges only once when equipped', (tester) async {
@@ -209,7 +211,8 @@ void main() {
     await tester.tap(find.text('SHOP'));
     await tester.pumpAndSettle();
     expect(find.text('THEME VAULT'), findsOneWidget);
-    await tester.ensureVisible(find.text('Synthwave Sunset'));
+    await tester.scrollUntilVisible(find.text('Synthwave Sunset'), 160, scrollable:
+      find.descendant(of: find.byKey(const Key('vault-list')), matching: find.byType(Scrollable)).first);
     await tester.tap(find.text('Synthwave Sunset'));
     await tester.pump();
     await tester.tap(find.text('Preview on Board'));

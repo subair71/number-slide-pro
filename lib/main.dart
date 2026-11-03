@@ -183,7 +183,7 @@ class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateM
     final today = DateTime.now().toIso8601String().substring(0, 10);
     final yesterday = DateTime.utc(int.parse(today.substring(0, 4)), int.parse(today.substring(5, 7)),
         int.parse(today.substring(8))).subtract(const Duration(days: 1)).toIso8601String().substring(0, 10);
-    final claimed = progress.dailyClaims['$size'] == today || (prefs?.getBool('daily_${today}_$size') ?? false);
+    final claimed = progress.dailyClaims['${today}_$size'] == today || progress.dailyClaims['$size'] == today || (prefs?.getBool('daily_${today}_$size') ?? false);
     final canReward = !_practice && (!daily || !claimed);
     final earned = canReward ? (daily ? 100 : 20) : 0;
     final gems = canReward ? (daily ? 25 : 5) : 0;
@@ -198,7 +198,7 @@ class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateM
     progress.coins += earned;
     progress.gems += gems;
     progress.xp += xp;
-    if (daily && canReward) progress.dailyClaims['$size'] = today;
+    if (daily && canReward) progress.dailyClaims['${today}_$size'] = today;
     await _save();
     if (record) {
       best = score;
@@ -234,10 +234,8 @@ class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateM
 
   Future<String> _rankAfter(Future<void> submission, int boardSize) async {
     try {
-      await submission.timeout(const Duration(seconds: 6));
-      final data = await leaderboard.standings(boardSize).firstWhere((s) => !s.cached).timeout(const Duration(seconds: 7));
-      final index = data.entries.indexWhere((p) => p.mine);
-      return index < 0 ? 'Outside top 50' : '#${index + 1}';
+      final rank = await submission.then((_) => leaderboard.bestRank(boardSize)).timeout(const Duration(seconds: 8));
+      return rank == null ? 'Unranked' : '#$rank';
     } catch (_) {
       return 'Unavailable';
     }
@@ -329,7 +327,7 @@ class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateM
     _clock.stop();
     _overlay = true;
     final today = DateTime.now().toIso8601String().substring(0, 10);
-    final done = progress.dailyClaims['$size'] == today || (prefs?.getBool('daily_${today}_$size') ?? false);
+    final done = progress.dailyClaims['${today}_$size'] == today || progress.dailyClaims['$size'] == today || (prefs?.getBool('daily_${today}_$size') ?? false);
     final selected = await showModalBottomSheet<String>(context: context, backgroundColor: vaultPanel,
       builder: (ctx) => SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(
         mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [

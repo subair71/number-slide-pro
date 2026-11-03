@@ -130,7 +130,7 @@ class RunResults extends StatelessWidget {
               const SizedBox(height: 14), Center(child: _label('Score · ${run.score}', size: 12)),
             ])),
             const SizedBox(height: 18),
-            FilledButton.icon(onPressed: () => Navigator.pop(context, RunAction.next),
+            FilledButton.icon(iconAlignment: IconAlignment.end, onPressed: () => Navigator.pop(context, RunAction.next),
               style: FilledButton.styleFrom(backgroundColor: const Color(0xFF101022), foregroundColor: paper,
                 minimumSize: const Size.fromHeight(50)), label: Text('Next Puzzle',style: chunky(16)),
               icon: const Icon(Icons.arrow_forward)),
