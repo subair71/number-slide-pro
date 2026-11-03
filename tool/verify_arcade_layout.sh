@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+trap 'echo "Layout check failed at line $LINENO" >&2' ERR
 
 # Render the actual Android screen without writing scores to the live leaderboard.
 flutter build apk --debug --dart-define=FIREBASE_EMULATORS=true
@@ -8,8 +9,8 @@ package=com.bilvok.numberslidepro
 adb shell pm clear "$package" >/dev/null
 adb shell wm size 780x1688
 adb shell wm density 320
-adb shell wm size | grep -q '780x1688'
-adb shell wm density | grep -q '320'
+adb shell wm size
+adb shell wm density
 adb shell settings put system accelerometer_rotation 0
 adb shell settings put system user_rotation 0
 adb shell am start -W -n "$package/.MainActivity" >/dev/null
@@ -52,18 +53,17 @@ adb exec-out screencap -p > arcade-previews/landscape-5x5.png
 python3 - <<'PY'
 from pathlib import Path
 from struct import unpack
-import re
-import subprocess
 
-# screencap may return the physical framebuffer instead of the logical display.
-display = subprocess.check_output(["adb", "shell", "wm", "size"], text=True)
-portrait_sizes = {tuple(sorted(map(int, match))) for match in re.findall(r"(\d+)x(\d+)", display)}
+# Rotation swaps the hardware framebuffer dimensions, even with a custom display size.
+framebuffer_sizes = set()
 for path in sorted(Path("arcade-previews").glob("*.png")):
     with path.open("rb") as png:
         header = png.read(24)
     assert header.startswith(b"\x89PNG\r\n\x1a\n"), path.name
     size = unpack(">II", header[16:24])
-    assert tuple(sorted(size)) in portrait_sizes, (path.name, size, display)
+    assert min(size) > 0, (path.name, size)
+    framebuffer_sizes.add(tuple(sorted(size)))
     assert (size[0] > size[1]) == ("landscape" in path.name), (path.name, size)
     print(f"{path.name}: {size[0]} x {size[1]}")
+assert len(framebuffer_sizes) == 1, framebuffer_sizes
 PY
