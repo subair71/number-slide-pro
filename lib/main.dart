@@ -7,7 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'game_banner.dart';
 import 'leaderboard.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'arcade.dart';
+import 'leaderboard_sheet.dart';
+import 'puzzle_board.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +22,10 @@ class PuzzleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+    theme: ThemeData(useMaterial3: true, brightness: Brightness.dark,
+      scaffoldBackgroundColor: midnight, colorScheme: ColorScheme.fromSeed(seedColor: violet,
+        brightness: Brightness.dark).copyWith(primary: cyan, surface: panel)),
+    title: 'Number Slide Pro',
     home: const PuzzlePage(),
   );
 }
@@ -31,7 +36,7 @@ class PuzzlePage extends StatefulWidget {
   State<PuzzlePage> createState() => _PuzzlePageState();
 }
 
-class _PuzzlePageState extends State<PuzzlePage> {
+class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateMixin {
   static const _rewardedUnitId = kReleaseMode
       ? String.fromEnvironment('ADMOB_ANDROID_REWARDED_UNIT_ID')
       : 'ca-app-pub-3940256099942544/5224354917';
@@ -41,10 +46,15 @@ class _PuzzlePageState extends State<PuzzlePage> {
   RewardedAd? rewarded;
   SharedPreferences? prefs;
   final leaderboard = Leaderboard();
+  late final AnimationController _sweep;
+  int _round = 0;
+  int? _lastTile;
+  Offset _direction = Offset.zero;
 
   @override
   void initState() {
     super.initState();
+    _sweep = AnimationController(vsync: this, duration: const Duration(milliseconds: 610));
     _init();
     _loadAd();
   }
@@ -93,6 +103,9 @@ class _PuzzlePageState extends State<PuzzlePage> {
     }
     if (!mounted) return;
     setState(() {
+      _round++;
+      _lastTile = null;
+      _sweep.reset();
       board = tiles;
       moves = 0;
       daily = isDaily;
@@ -109,6 +122,8 @@ class _PuzzlePageState extends State<PuzzlePage> {
     if (!adjacent) return;
     if (sound) SystemSound.play(SystemSoundType.click);
     setState(() {
+      _lastTile = board[index];
+      _direction = Offset((empty % size - index % size).toDouble(), (empty ~/ size - index ~/ size).toDouble());
       board[empty] = board[index];
       board[index] = 0;
       moves++;
@@ -136,11 +151,36 @@ class _PuzzlePageState extends State<PuzzlePage> {
     }
     unawaited(_syncBest(size, best));
     if (!mounted) return;
-    await showDialog<void>(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('Puzzle solved! 🎉'),
-      content: Text('Moves: $moves • Score: $score\n${canReward ? "Coins earned!" : "Daily reward already claimed."}'),
-      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Continue'))],
-    ));
+    final still = MediaQuery.disableAnimationsOf(context);
+    if (!still) {
+      try {
+        await _sweep.forward(from: 0).orCancel;
+      } on TickerCanceled {
+        return;
+      }
+    }
+    if (!mounted) return;
+    final earned = canReward ? (daily ? 100 : 20) : 0;
+    await showGeneralDialog<void>(
+      context: context, barrierDismissible: false, barrierLabel: 'Puzzle result',
+      transitionDuration: still ? Duration.zero : const Duration(milliseconds: 160),
+      pageBuilder: (ctx, _, __) => AlertDialog(
+        backgroundColor: panel,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22), side: const BorderSide(color: seam)),
+        icon: const Icon(Icons.emoji_events_outlined, size: 38, color: amber),
+        title: const Text('Puzzle solved!', style: TextStyle(fontWeight: FontWeight.w900)),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('$size×$size  /  ${daily ? "DAILY CHALLENGE" : "CLASSIC"}', style: caption),
+          const SizedBox(height: 12),
+          Text('$score', style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w900, fontFeatures: figures)),
+          Text('Score · $moves moves', style: const TextStyle(color: quiet)),
+          const Divider(height: 22, color: seam),
+          Text('+$earned coins', style: const TextStyle(color: amber, fontWeight: FontWeight.bold)),
+          if (!canReward) const Text('Daily reward already claimed', style: TextStyle(color: quiet)),
+        ]),
+        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Continue'))],
+      ),
+    );
     if (!mounted) return;
     busy = false;
     _newGame(isDaily: daily);
@@ -185,6 +225,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
   }
 
   void _hint() {
+    if (busy) return;
     if (coins < 30 || board.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You need 30 coins')));
       return;
@@ -201,295 +242,163 @@ class _PuzzlePageState extends State<PuzzlePage> {
   }
 
   void _leaderboard() {
-    final boardSize = size;
-    // Retry the locally saved best whenever the player reopens this board.
-    unawaited(_syncBest(boardSize, best));
-    final scores = leaderboard.connect().asStream().asyncExpand((_) => leaderboard.top(boardSize));
     showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(ctx).height * .65,
-          child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('🏆 $boardSize×$boardSize Leaderboard', style: const TextStyle(fontSize: 22)),
-            ),
-            Expanded(child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: scores,
-              builder: (ctx, snapshot) {
-                if (snapshot.hasError) {
-                  return const Center(child: Text('Leaderboard unavailable. Reopen it to retry.'));
-                }
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                final entries = snapshot.data!.docs;
-                if (entries.isEmpty) return const Center(child: Text('No scores yet. Solve a puzzle to enter.'));
-                return ListView.builder(itemCount: entries.length, itemBuilder: (ctx, i) {
-                  final entry = entries[i].data();
-                  return ListTile(
-                    leading: CircleAvatar(child: Text('${i + 1}')),
-                    title: Text('${entry['name']}'),
-                    trailing: Text('${entry['score']}'),
-                  );
-                });
-              },
-            )),
-          ]),
-        ),
-      ),
+      context: context, isScrollControlled: true, useSafeArea: true, backgroundColor: panel,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => LeaderboardSheet(initialSize: size, watch: (n) {
+        unawaited(_syncBest(n, prefs?.getInt('best_$n') ?? 0));
+        return leaderboard.standings(n);
+      }),
     );
   }
 
   @override
   void dispose() {
+    _sweep.dispose();
     rewarded?.dispose();
     super.dispose();
   }
 
-  static const _bg = Color(0xFF070A1B);
-  static const _gold = Color(0xFFFBBF24);
-  static const _violet = Color(0xFF6366F1);
+  Widget _header() => Row(children: [
+    Container(width: 36, height: 36, alignment: Alignment.center,
+      decoration: BoxDecoration(color: tileIndigo, border: Border.all(color: const Color(0xFF6872AF)),
+        borderRadius: BorderRadius.circular(10)),
+      child: const Icon(Icons.dashboard_rounded, color: cyan, size: 22)),
+    const SizedBox(width: 9),
+    Expanded(child: Align(alignment: Alignment.centerLeft, child: FittedBox(fit: BoxFit.scaleDown,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('POCKET ARCADE', style: TextStyle(color: cyan, fontSize: 9, letterSpacing: 1.7,
+          fontWeight: FontWeight.w800)),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          const Text('Number Slide', style: TextStyle(color: Colors.white, fontSize: 24, height: 1.14,
+            letterSpacing: -.8, fontWeight: FontWeight.w900)),
+          const SizedBox(width: 5),
+          DecoratedBox(decoration: BoxDecoration(color: amber, borderRadius: BorderRadius.circular(4)),
+            child: const Padding(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Text('PRO', style: TextStyle(color: midnight, fontSize: 9, fontWeight: FontWeight.w900)))),
+        ]),
+      ])))),
+    const SizedBox(width: 6),
+    ConstrainedBox(constraints: const BoxConstraints(maxWidth: 84),
+      child: Semantics(label: '$coins coins', hint: _rewardedUnitId.isEmpty ? null : 'Watch an ad to earn 50 coins',
+        button: _rewardedUnitId.isNotEmpty, excludeSemantics: true,
+        child: InkWell(onTap: _rewardedUnitId.isEmpty || busy ? null : _showAd,
+          borderRadius: BorderRadius.circular(18),
+          child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48),
+            child: Center(heightFactor: 1, child: DecoratedBox(
+        decoration: BoxDecoration(color: const Color(0xFF312B2B), borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFF6C5740))),
+        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.toll_rounded, color: amber, size: 16), const SizedBox(width: 4),
+            Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text('$coins',
+              style: const TextStyle(color: amber, fontFeatures: figures, fontWeight: FontWeight.w800)))),
+          ])))))))),
+    IconButton(tooltip: sound ? 'Mute sound' : 'Enable sound',
+      onPressed: () {
+        setState(() => sound = !sound);
+        prefs?.setBool('sound', sound);
+      }, icon: Icon(sound ? Icons.volume_up_outlined : Icons.volume_off_outlined, color: quiet)),
+  ]);
 
+  Widget _stat(String label, String value) => Expanded(child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: caption),
+      Text(value, maxLines: 1, overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: Colors.white, fontSize: 23, height: 1.12,
+          fontWeight: FontWeight.w800, fontFeatures: figures)),
+    ],
+  ));
 
-  BoxDecoration _glass({double radius = 18}) => BoxDecoration(
-    color: Colors.white.withValues(alpha: .045),
-    borderRadius: BorderRadius.circular(radius),
-    border: Border.all(color: Colors.white.withValues(alpha: .10)),
-    boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 20, offset: Offset(0, 8))],
-  );
+  Widget _instruments() => Column(mainAxisSize: MainAxisSize.min, children: [
+    _header(), const SizedBox(height: 12),
+    GridSelector(value: size, onChanged: busy ? null : (n) {
+      if (size != n) { size = n; _newGame(); }
+    }),
+    const SizedBox(height: 10),
+    Container(padding: const EdgeInsets.fromLTRB(16, 5, 5, 5),
+      decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(14), border: Border.all(color: seam)),
+      child: Row(children: [
+        _stat('MOVES', moves.toString().padLeft(2, '0')),
+        Container(width: 1, height: 30, margin: const EdgeInsets.only(right: 14), color: seam),
+        _stat('BEST SCORE', '$best'),
+        IconButton(tooltip: 'Leaderboard', onPressed: busy ? null : _leaderboard,
+          icon: const Icon(Icons.leaderboard_outlined, color: cyan)),
+      ]),
+    ),
+  ]);
 
-  Widget _action(String label, IconData icon, VoidCallback onTap,
-      {bool primary = false, Color? iconColor}) {
-    return SizedBox(
-      height: 52,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Ink(
-            decoration: primary
-                ? BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF4338CA), Color(0xFF6366F1), Color(0xFF4338CA)]),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0x886366F1)))
-                : _glass(radius: 16),
+  Widget _action(String label, IconData icon, VoidCallback callback, {bool primary = false, Color accent = quiet}) {
+    final fill = primary ? violet : panel;
+    return Semantics(button: true, child: Material(color: fill,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: primary ? const Color(0xFFAD94FF) : seam)),
+      clipBehavior: Clip.antiAlias, child: InkWell(onTap: busy ? null : callback,
+        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(icon, size: 17, color: iconColor ?? Colors.white),
-              const SizedBox(width: 7),
-              Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12))),
-            ]),
-          ),
-        ),
-      ),
-    );
+              Icon(icon, size: 18, color: primary ? Colors.white : accent), const SizedBox(width: 6),
+              Flexible(child: Text(label, textAlign: TextAlign.center, style: const TextStyle(
+                color: Colors.white, fontSize: 13, height: 1.14, fontWeight: FontWeight.w700))),
+            ]))))));
   }
 
-  Widget _tile(int index) {
-    final number = board[index];
-    if (number == 0) {
-      return Container(
-        decoration: BoxDecoration(
-          color: const Color(0xB8000000),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: .04)),
-          boxShadow: const [BoxShadow(color: Color(0xBB000000), blurRadius: 8, offset: Offset(0, 3), blurStyle: BlurStyle.inner)]),
-        child: Center(child: Container(width: 6, height: 6,
-          decoration: const BoxDecoration(color: Color(0xFF303650), shape: BoxShape.circle))),
-      );
-    }
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _tap(index),
-        borderRadius: BorderRadius.circular(12),
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                colors: [Color(0xFF3A4962), Color(0xFF202A42)]),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0x8864758B)),
-            boxShadow: const [
-              BoxShadow(color: Color(0xB8000000), blurRadius: 9, offset: Offset(0, 5)),
-              BoxShadow(color: Color(0x22FFFFFF), blurRadius: 2, offset: Offset(0, -1), blurStyle: BlurStyle.inner),
-            ],
-          ),
-          child: Center(child: Text('$number', style: TextStyle(
-              color: Colors.white, fontSize: size == 5 ? 19 : (size == 4 ? 24 : 30),
-              fontWeight: FontWeight.w800))),
-        ),
-      ),
-    );
-  }
+  Widget _controls() => Column(children: [
+    Row(children: [
+      Expanded(child: _action('New Game', Icons.replay_rounded, () => _newGame(), primary: true)),
+      const SizedBox(width: 8),
+      Expanded(child: _action('Daily Challenge', Icons.calendar_today_outlined, () => _newGame(isDaily: true),
+        accent: daily ? amber : quiet)),
+    ]),
+    const SizedBox(height: 8),
+    Row(children: [
+      Expanded(child: _action('Hint · 30 coins', Icons.lightbulb_outline, _hint, accent: amber)),
+      if (_rewardedUnitId.isNotEmpty) ...[
+        const SizedBox(width: 8),
+        Expanded(child: _action('Watch Ad · +50 coins', Icons.play_circle_outline, _showAd, accent: amber)),
+      ],
+    ]),
+  ]);
+
+  Widget _playfield(double side) => SizedBox(width: side, child: Column(mainAxisSize: MainAxisSize.min, children: [
+    Row(children: [
+      const Text('PLAYFIELD', style: caption), const Spacer(),
+      Icon(daily ? Icons.calendar_today : Icons.circle, size: daily ? 12 : 7, color: daily ? amber : cyan),
+      const SizedBox(width: 5), Text(daily ? 'Daily challenge' : 'Classic',
+        style: TextStyle(color: daily ? amber : cyan, fontSize: 12, fontWeight: FontWeight.w700)),
+    ]),
+    const SizedBox(height: 7),
+    PuzzleBoard(key: ValueKey(_round), tiles: board, size: size, onTap: busy ? null : _tap,
+      lastTile: _lastTile, direction: _direction, moves: moves, sweep: _sweep),
+  ]));
 
   @override
   Widget build(BuildContext context) {
-    final screen = MediaQuery.sizeOf(context);
-    final boardWidth = min(screen.width - 44, 380.0);
-    final bannerWidth = (screen.width - MediaQuery.paddingOf(context).horizontal).floor();
+    final bannerWidth = (MediaQuery.sizeOf(context).width - MediaQuery.paddingOf(context).horizontal).floor();
     return Scaffold(
-      backgroundColor: _bg,
-      bottomNavigationBar: GameBanner(
-        key: ValueKey((bannerWidth, MediaQuery.orientationOf(context))),
-        width: bannerWidth,
-      ),
-      body: Stack(children: [
-        Positioned(top: -120, left: -60, right: -60, height: 400,
-          child: IgnorePointer(child: Container(decoration: const BoxDecoration(
-            gradient: RadialGradient(colors: [Color(0x444F46E5), Colors.transparent]))))),
-        Positioned(bottom: -120, left: -130, width: 360, height: 360,
-          child: IgnorePointer(child: Container(decoration: const BoxDecoration(
-            gradient: RadialGradient(colors: [Color(0x2238BDF8), Colors.transparent]))))),
-        Positioned(bottom: 50, right: -140, width: 320, height: 320,
-          child: IgnorePointer(child: Container(decoration: const BoxDecoration(
-            gradient: RadialGradient(colors: [Color(0x20F59E0B), Colors.transparent]))))),
-        SafeArea(child: Center(child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: LayoutBuilder(builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: max(0, constraints.maxHeight - 36)),
-              child: Column(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Column(children: [
-                  Row(children: [
-                    Expanded(child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Container(width: 10, height: 10,
-                              decoration: const BoxDecoration(color: _violet, shape: BoxShape.circle,
-                                boxShadow: [BoxShadow(color: _violet, blurRadius: 9)])),
-                            const SizedBox(width: 9),
-                            const Text('Number Slide', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -.5)),
-                            const SizedBox(width: 7),
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)]),
-                                borderRadius: BorderRadius.circular(6)),
-                              child: const Text('PRO', style: TextStyle(color: _bg, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1))),
-                        ]),
-                      ),
-                    )),
-                    const SizedBox(width: 8),
-                    _topIcon(Icons.bar_chart_rounded, _leaderboard),
-                    const SizedBox(width: 8),
-                    _topIcon(sound ? Icons.volume_up_outlined : Icons.volume_off_outlined, () {
-                      setState(() => sound = !sound);
-                      prefs?.setBool('sound', sound);
-                    }),
-                  ]),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                    decoration: _glass(),
-                    child: Row(children: [
-                      Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                        decoration: BoxDecoration(color: const Color(0x99000000),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: const Color(0x55FBBF24))),
-                        child: Row(children: [
-                          const Icon(Icons.monetization_on, size: 22, color: _gold),
-                          const SizedBox(width: 5),
-                          Text('$coins', style: const TextStyle(color: Color(0xFFFDE68A), fontWeight: FontWeight.w900)),
-                          const Text(' coins', style: TextStyle(color: Color(0xFFDFC98B), fontSize: 10)),
-                          if (_rewardedUnitId.isNotEmpty) ...[
-                            const SizedBox(width: 5),
-                            GestureDetector(onTap: _showAd, child: const Icon(Icons.add_circle_outline, color: _gold, size: 16)),
-                          ],
-                        ]),
-                      ),
-                      const Spacer(),
-                      const Text('Moves: ', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 11)),
-                      Text('$moves', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-                      const Padding(padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Icon(Icons.circle, size: 4, color: Color(0xFF64748B))),
-                      const Text('Best: ', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 11)),
-                      Text('$best', style: const TextStyle(color: Color(0xFF34D399), fontWeight: FontWeight.w800)),
-                    ]),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(color: const Color(0x77000000),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: .10))),
-                    child: Row(children: [
-                      for (final mode in [3, 4, 5])
-                        Expanded(child: GestureDetector(
-                          onTap: () { if (!busy && size != mode) { setState(() => size = mode); _newGame(); } },
-                          child: AnimatedContainer(duration: const Duration(milliseconds: 180),
-                            height: 38,
-                            decoration: size == mode
-                              ? BoxDecoration(gradient: const LinearGradient(colors: [_violet, Color(0xFF4338CA)]),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0x886366F1)))
-                              : BoxDecoration(borderRadius: BorderRadius.circular(12)),
-                            child: Center(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              if (size == mode) const Padding(padding: EdgeInsets.only(right: 5),
-                                child: Icon(Icons.check, color: Colors.white, size: 14)),
-                              Text(mode == 3 ? 'Easy' : mode == 4 ? 'Medium' : 'Hard',
-                                style: TextStyle(color: size == mode ? Colors.white : const Color(0xFF9CA3AF),
-                                  fontSize: 12, fontWeight: FontWeight.w700)),
-                            ])),
-                          ),
-                        )),
-                    ]),
-                  ),
-                ]),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  child: Container(
-                    width: boardWidth, height: boardWidth,
-                    padding: const EdgeInsets.all(11),
-                    decoration: BoxDecoration(
-                      color: const Color(0xBB11182D),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: .10)),
-                      boxShadow: const [BoxShadow(color: Color(0x99000000), blurRadius: 26, offset: Offset(0, 12))]),
-                    child: GridView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: board.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: size, mainAxisSpacing: 7, crossAxisSpacing: 7),
-                      itemBuilder: (context, index) => _tile(index),
-                    ),
-                  ),
-                ),
-                Column(children: [
-                  Row(children: [
-                    Expanded(child: _action('New Game', Icons.restart_alt, () => _newGame())),
-                    const SizedBox(width: 10),
-                    Expanded(child: _action('Daily Challenge', Icons.calendar_month_outlined,
-                        () => _newGame(isDaily: true), iconColor: _gold)),
-                  ]),
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    Expanded(child: _action('Hint • 30 🪙', Icons.lightbulb,
-                        _hint, iconColor: _gold)),
-                    if (_rewardedUnitId.isNotEmpty) ...[
-                      const SizedBox(width: 10),
-                      Expanded(child: _action('Watch Ad • +50 🪙', Icons.smart_display,
-                          _showAd, primary: true)),
-                    ],
-                  ]),
-                  if (daily) const Padding(padding: EdgeInsets.only(top: 10),
-                    child: Text("TODAY'S DAILY CHALLENGE", style: TextStyle(
-                      color: _gold, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.5))),
-                ]),
-              ]),
-            ),
-          )),
-        ))),
-      ]),
+      bottomNavigationBar: GameBanner(key: ValueKey((bannerWidth, MediaQuery.orientationOf(context))), width: bannerWidth),
+      body: CustomPaint(painter: const ArcadeBackdrop(), child: SafeArea(child: LayoutBuilder(
+        builder: (context, bounds) {
+          if (bounds.maxWidth >= 600 && bounds.maxWidth > bounds.maxHeight * 1.25) {
+            final half = min(450.0, (bounds.maxWidth - 48) * .5);
+            final minBoard = min(half, size * 48.0 + (size - 1) * 4 + 24);
+            final side = (bounds.maxHeight - 48).clamp(minBoard, half).toDouble();
+            return Center(child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                _playfield(side), const SizedBox(width: 16),
+                SizedBox(width: half, child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  _instruments(), const SizedBox(height: 14), _controls(),
+                ])),
+              ])));
+          }
+          final side = min(428.0, max(0.0, bounds.maxWidth - 32));
+          return Center(child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+            child: SizedBox(width: side, child: Column(mainAxisSize: MainAxisSize.min, children: [
+              _instruments(), const SizedBox(height: 16), _playfield(side),
+              const SizedBox(height: 16), _controls(),
+            ]))));
+        },
+      ))),
     );
   }
-
-  Widget _topIcon(IconData icon, VoidCallback onTap) => Container(
-    width: 40, height: 40, decoration: _glass(radius: 12),
-    child: IconButton(onPressed: onTap, icon: Icon(icon, color: const Color(0xFFCBD5E1), size: 20),
-      padding: EdgeInsets.zero),
-  );
 }

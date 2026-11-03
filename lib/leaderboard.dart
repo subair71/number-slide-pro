@@ -49,4 +49,26 @@ class Leaderboard {
           .orderBy('score', descending: true)
           .limit(50)
           .snapshots(includeMetadataChanges: true);
+
+  Stream<Standings> standings(int size) async* {
+    final player = await connect();
+    await for (final snapshot in top(size)) {
+      yield Standings(
+        cached: snapshot.metadata.isFromCache,
+        entries: [
+          for (final doc in snapshot.docs)
+            (name: doc.data()['name'] as String, score: doc.data()['score'] as int,
+             mine: doc.data()['uid'] == player.uid),
+        ],
+      );
+    }
+  }
+}
+
+typedef RankedPlayer = ({String name, int score, bool mine});
+
+class Standings {
+  const Standings({required this.entries, required this.cached});
+  final List<RankedPlayer> entries;
+  final bool cached;
 }
