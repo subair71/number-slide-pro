@@ -94,6 +94,50 @@ jobs:
           name: number-slide-pro-${{ steps.firebase.outputs.target }}-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
+      - name: Check publisher configuration
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        id: publisher
+        env:
+          APP_ID: ${{ vars.ADMOB_ANDROID_APP_ID }}
+          BANNER_ID: ${{ vars.ADMOB_ANDROID_BANNER_UNIT_ID }}
+          REWARDED_ID: ${{ vars.ADMOB_ANDROID_REWARDED_UNIT_ID }}
+        run: |
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          app, banner, rewarded = (os.environ[k] for k in ("APP_ID", "BANNER_ID", "REWARDED_ID"))
+          if not any((app, banner, rewarded)):
+              print("Publisher APK skipped: no AdMob repository variables have been set.")
+          else:
+              account = re.fullmatch(r"(ca-app-pub-[0-9]{16})~[0-9]{10}", app)
+              if not account or account[1] == "ca-app-pub-3940256099942544":
+                  raise SystemExit("Set ADMOB_ANDROID_APP_ID to the game's real Android AdMob app ID.")
+              for name, unit in (("BANNER", banner), ("REWARDED", rewarded)):
+                  if not re.fullmatch(account[1] + r"/[0-9]{10}", unit):
+                      raise SystemExit(f"Set ADMOB_ANDROID_{name}_UNIT_ID to a unit from the same publisher.")
+              if banner == rewarded:
+                  raise SystemExit("Banner and rewarded placements require distinct ad unit IDs.")
+              with Path(os.environ["GITHUB_OUTPUT"]).open("a") as output:
+                  print("configured=true", file=output)
+          PY
+      - name: Build APK with publisher ad units
+        if: steps.publisher.outputs.configured == 'true'
+        env:
+          USE_EMULATORS: ${{ steps.firebase.outputs.target == 'emulator' }}
+          ADMOB_ANDROID_APP_ID: ${{ vars.ADMOB_ANDROID_APP_ID }}
+          BANNER_ID: ${{ vars.ADMOB_ANDROID_BANNER_UNIT_ID }}
+          REWARDED_ID: ${{ vars.ADMOB_ANDROID_REWARDED_UNIT_ID }}
+        run: |
+          flutter build apk --release \
+            "--dart-define=FIREBASE_EMULATORS=$USE_EMULATORS" \
+            "--dart-define=ADMOB_ANDROID_BANNER_UNIT_ID=$BANNER_ID" \
+            "--dart-define=ADMOB_ANDROID_REWARDED_UNIT_ID=$REWARDED_ID"
+      - uses: actions/upload-artifact@v4
+        if: steps.publisher.outputs.configured == 'true'
+        with:
+          name: number-slide-pro-${{ steps.firebase.outputs.target }}-publisher-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
       - name: Enable KVM for Android verification
         if: steps.firebase.outputs.target == 'online' && github.event_name != 'pull_request'
         run: sudo chmod 666 /dev/kvm

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,7 +32,9 @@ class PuzzlePage extends StatefulWidget {
 }
 
 class _PuzzlePageState extends State<PuzzlePage> {
-  static const rewardedTestId = 'ca-app-pub-3940256099942544/5224354917';
+  static const _rewardedUnitId = kReleaseMode
+      ? String.fromEnvironment('ADMOB_ANDROID_REWARDED_UNIT_ID')
+      : 'ca-app-pub-3940256099942544/5224354917';
   int size = 4, moves = 0, coins = 0, best = 0;
   bool daily = false, sound = true, busy = false;
   List<int> board = [];
@@ -144,14 +147,18 @@ class _PuzzlePageState extends State<PuzzlePage> {
   }
 
   void _loadAd() {
+    if (!mounted || _rewardedUnitId.isEmpty) return;
     RewardedAd.load(
-      adUnitId: rewardedTestId,
+      adUnitId: _rewardedUnitId,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
+          if (!mounted) {
+            ad.dispose();
+            return;
+          }
           rewarded?.dispose();
-          rewarded = ad;
-          if (mounted) setState(() {});
+          setState(() => rewarded = ad);
         },
         onAdFailedToLoad: (error) => debugPrint('Rewarded ad: $error'),
       ),
@@ -388,8 +395,10 @@ class _PuzzlePageState extends State<PuzzlePage> {
                           const SizedBox(width: 5),
                           Text('$coins', style: const TextStyle(color: Color(0xFFFDE68A), fontWeight: FontWeight.w900)),
                           const Text(' coins', style: TextStyle(color: Color(0xFFDFC98B), fontSize: 10)),
-                          const SizedBox(width: 5),
-                          GestureDetector(onTap: _showAd, child: const Icon(Icons.add_circle_outline, color: _gold, size: 16)),
+                          if (_rewardedUnitId.isNotEmpty) ...[
+                            const SizedBox(width: 5),
+                            GestureDetector(onTap: _showAd, child: const Icon(Icons.add_circle_outline, color: _gold, size: 16)),
+                          ],
                         ]),
                       ),
                       const Spacer(),
@@ -460,9 +469,11 @@ class _PuzzlePageState extends State<PuzzlePage> {
                   Row(children: [
                     Expanded(child: _action('Hint • 30 🪙', Icons.lightbulb,
                         _hint, iconColor: _gold)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _action('Watch Ad • +50 🪙', Icons.smart_display,
-                        _showAd, primary: true)),
+                    if (_rewardedUnitId.isNotEmpty) ...[
+                      const SizedBox(width: 10),
+                      Expanded(child: _action('Watch Ad • +50 🪙', Icons.smart_display,
+                          _showAd, primary: true)),
+                    ],
                   ]),
                   if (daily) const Padding(padding: EdgeInsets.only(top: 10),
                     child: Text("TODAY'S DAILY CHALLENGE", style: TextStyle(

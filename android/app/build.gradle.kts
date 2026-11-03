@@ -23,8 +23,7 @@ android {
     defaultConfig {
 
         applicationId = "com.bilvok.numberslidepro"
-        manifestPlaceholders["adMobAppId"] = providers.environmentVariable("ADMOB_ANDROID_APP_ID")
-            .getOrElse("ca-app-pub-3940256099942544~3347511713")
+        manifestPlaceholders["adMobAppId"] = "ca-app-pub-3940256099942544~3347511713"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23
@@ -35,6 +34,9 @@ android {
 
     buildTypes {
         release {
+            providers.environmentVariable("ADMOB_ANDROID_APP_ID").orNull?.takeIf { it.isNotBlank() }?.let {
+                manifestPlaceholders["adMobAppId"] = it
+            }
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")

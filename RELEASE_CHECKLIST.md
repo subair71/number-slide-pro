@@ -1,7 +1,6 @@
 # Release checklist
 - [ ] Configure FlutterFire, anonymous sign-in and Firestore
-- [ ] Add real Android AdMob application ID to AndroidManifest.xml
-- [ ] Replace rewarded ad test unit ID with production unit ID
+- [ ] Configure the Android AdMob app, banner, and rewarded IDs for the publisher account
 - [ ] Implement consent management and privacy policy
 - [ ] Harden leaderboard against score manipulation (server validation, App Check)
 - [ ] Create app icon, screenshots and store listing
