@@ -71,7 +71,7 @@ class PuzzleBoard extends StatelessWidget {
                         ),
                         if (!still && lastTile == tiles[i])
                           TweenAnimationBuilder<double>(
-                            key: ValueKey(moves), tween: Tween(begin: 0, end: 1),
+                            key: ValueKey('landing-$moves'), tween: Tween(begin: 0, end: 1),
                             duration: const Duration(milliseconds: 300),
                             builder: (_, t, __) => IgnorePointer(child: CustomPaint(
                               painter: _LandingEdge(direction, math.sin(math.pi * t)))),

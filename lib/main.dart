@@ -368,7 +368,7 @@ class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateM
         style: TextStyle(color: daily ? amber : cyan, fontSize: 12, fontWeight: FontWeight.w700)),
     ]),
     const SizedBox(height: 7),
-    PuzzleBoard(key: ValueKey(_round), tiles: board, size: size, onTap: busy ? null : _tap,
+    PuzzleBoard(key: ValueKey('round-$_round'), tiles: board, size: size, onTap: busy ? null : _tap,
       lastTile: _lastTile, direction: _direction, moves: moves, sweep: _sweep),
   ]));
 
