@@ -23,7 +23,7 @@ flutter:
   fonts:
     - family: Fredoka
       fonts:
-        - asset: assets/fonts/FredokaOne.ttf
+        - asset: assets/fonts/Fredoka.ttf
     - family: Outfit
       fonts:
         - asset: assets/fonts/Outfit.ttf
