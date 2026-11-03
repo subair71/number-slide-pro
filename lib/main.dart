@@ -61,7 +61,9 @@ class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateM
 
   void _resumeClock() {
     if (moves > 0 && !busy && !_shop && !_overlay &&
-        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) _clock.start();
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+      _clock.start();
+    }
   }
   bool daily = false, sound = true, busy = false;
   List<int> board = [];
@@ -463,7 +465,7 @@ class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateM
     Row(children: [
       const Text('PLAYFIELD', style: caption), const Spacer(),
       Icon(daily ? Icons.calendar_today : Icons.circle, size: daily ? 12 : 7, color: daily ? amber : cyan),
-      const SizedBox(width: 5), Text(daily ? 'Daily challenge' : 'Classic',
+      const SizedBox(width: 5), Text(_practice ? 'Practice' : daily ? 'Daily challenge' : 'Classic',
         style: TextStyle(color: daily ? amber : cyan, fontSize: 12, fontWeight: FontWeight.w700)),
     ]),
     const SizedBox(height: 7),

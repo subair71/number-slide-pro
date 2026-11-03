@@ -107,9 +107,13 @@ class _ThemeVaultState extends State<ThemeVault> {
           child: AspectRatio(aspectRatio: 1, child: GridView.count(primary: false, padding: EdgeInsets.zero,
             physics: const NeverScrollableScrollPhysics(), crossAxisCount: 3, mainAxisSpacing: 5, crossAxisSpacing: 5,
             children: List.generate(9, (i) {
-              if (i == 8) return CustomPaint(painter: SlotOutline(trail.top), child: Center(
-                child: Text('✦', style: chunky(15, trail.top.withValues(alpha: .4)))));
-              return DecoratedBox(decoration: tileFinish(skin), child: Center(child: Text('${i+1}', style: chunky(16))));
+              if (i == 8) {
+                return CustomPaint(painter: SlotOutline(trail.top), child: Center(
+                  child: Text('✦', style: chunky(15, trail.top.withValues(alpha: .4)))));
+              }
+              return DecoratedBox(decoration: tileFinish(skin), child: CustomPaint(
+                foregroundPainter: skin.id == 'matrix' ? const Scanlines() : null,
+                child: Center(child: Text('${i+1}', style: chunky(16, skin.id == 'sunset' ? const Color(0xFFFFE4A0) : paper)))));
             }))),
         ),
       ]),
@@ -167,7 +171,8 @@ class _ThemeVaultState extends State<ThemeVault> {
               Container(width: 32, height: 32, alignment: Alignment.center, decoration: vaultBox(const Color(0xFF101428), edge: hotPink, radius: 10),
                 child: const Text('🎨', style: TextStyle(fontSize: 17))),
               const SizedBox(width: 6), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('THEME VAULT', style: chunky(15)), const Text('Personalize Tile FX & Glow', style: TextStyle(color: Color(0xFFB6B8D0), fontSize: 10)),
+                ShaderMask(shaderCallback: (r) => const LinearGradient(colors: [paper, paper, neon]).createShader(r),
+                  child: Text('THEME VAULT', style: chunky(15))), const Text('Personalize Tile FX & Glow', style: TextStyle(color: Color(0xFFB6B8D0), fontSize: 10)),
               ])), _wallet(),
               IconButton(tooltip: 'Close vault', onPressed: widget.onClose, icon: const Icon(Icons.close, size: 19)),
             ])),
@@ -227,4 +232,20 @@ class VaultButton extends StatelessWidget {
       child: InkWell(onTap: tap, borderRadius: BorderRadius.circular(12), child: Container(
         constraints: const BoxConstraints(minHeight: 42), alignment: Alignment.center, padding: const EdgeInsets.symmetric(horizontal: 5),
         child: Text(label, textAlign: TextAlign.center, style: chunky(13, bright ? const Color(0xFF070B20) : paper))))));
+}
+
+class Scanlines extends CustomPainter {
+  const Scanlines();
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.clipRRect(RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(9)));
+    final ink = Paint()..color = const Color(0x2200110C);
+    for (double y = 3; y < size.height; y += 4) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), ink);
+    }
+    canvas.restore();
+  }
+  @override
+  bool shouldRepaint(Scanlines old) => false;
 }

@@ -33,6 +33,8 @@ wait_for_label() {
 
 wait_for_label 'Tile 15'
 adb exec-out screencap -p > arcade-previews/portrait-4x4.png
+python3 tool/capture_stitch_screens.py
+wait_for_label 'Tile'
 wait_for_label '5 by 5 grid'
 python3 - "$layout" <<'PY'
 import re

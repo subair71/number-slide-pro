@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'arcade.dart';
 import 'vault_items.dart';
-import 'theme_vault.dart' show SlotOutline, tileFinish;
+import 'theme_vault.dart' show SlotOutline, tileFinish, Scanlines;
 
 class PuzzleBoard extends StatelessWidget {
   const PuzzleBoard({
@@ -68,6 +68,7 @@ class PuzzleBoard extends StatelessWidget {
                               style: TextStyle(fontFamily: 'Lilita', color: skin.id == 'sunset' ? const Color(0xFFFFE4A0) : Colors.white, fontSize: math.min(side * .43, 40.0),
                                 fontFeatures: figures, height: 1, fontWeight: FontWeight.w800)))),
                         ),
+                        if (skin.id == 'matrix') const IgnorePointer(child: CustomPaint(painter: Scanlines())),
                         if (!still && trail.id != 'quiet' && lastTile == tiles[i])
                           TweenAnimationBuilder<double>(
                             key: ValueKey('landing-$moves'), tween: Tween(begin: 0, end: 1),
