@@ -51,8 +51,24 @@ jobs:
         with:
           name: number-slide-pro-android-release
           path: play-package/android/
+          overwrite: true
           if-no-files-found: error
           compression-level: 0
+
+  listing:
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: number-slide-pro-android-release
+          path: play-package/android
       - name: Set up store artwork rendering
         run: |
           python3 -m venv "$RUNNER_TEMP/play-art"
@@ -79,6 +95,7 @@ jobs:
         with:
           name: number-slide-pro-google-play-listing
           path: play-package/listing/
+          overwrite: true
           if-no-files-found: error
       - name: Assemble first-upload download
         run: |
@@ -89,11 +106,12 @@ jobs:
         with:
           name: number-slide-pro-first-upload
           path: play-package/
+          overwrite: true
           if-no-files-found: error
           compression-level: 0
 
   verify-windows-handoff:
-    needs: package
+    needs: listing
     runs-on: windows-latest
     timeout-minutes: 12
     steps:
