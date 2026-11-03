@@ -179,7 +179,7 @@ class _ThemeVaultState extends State<ThemeVault> {
             Container(width: double.infinity, color: vaultPanel, padding: const EdgeInsets.fromLTRB(12, 6, 6, 9), child: _tabs()),
             const Divider(height: 1, color: vaultEdge),
             Expanded(child: ListView(key: const Key('vault-list'), controller: scroll, padding: const EdgeInsets.fromLTRB(12, 12, 12, 10), children: [
-              _preview(math.min(math.min(width * .56, 192.0), height * .24)),
+              _preview(math.min(math.min(width * .56, 192.0), height * (height > 650 ? .30 : .24))),
               Padding(padding: const EdgeInsets.only(top: 15), child: Row(children: [
                 Expanded(child: Text('FEATURED $noun', style: chunky(13))),
                 Text('${items.length} Items Available', style: chunky(11, hotPink)),

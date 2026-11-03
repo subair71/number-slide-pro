@@ -481,6 +481,9 @@ class _PuzzlePageState extends State<PuzzlePage> with SingleTickerProviderStateM
     }, child: Scaffold(
       bottomNavigationBar: SafeArea(top: false, child: Column(mainAxisSize: MainAxisSize.min, children: [
         ArcadeNav(selected: _shop ? 2 : 0, onSelect: _navigate),
+        if (_shop && MediaQuery.sizeOf(context).aspectRatio < .48)
+          SizedBox(width: double.infinity, height: MediaQuery.sizeOf(context).height * .10,
+            child: const CustomPaint(painter: ArcadeBackdrop())),
         if (!_shop) GameBanner(key: ValueKey((bannerWidth, MediaQuery.orientationOf(context))), width: bannerWidth),
       ])),
       body: Stack(fit: StackFit.expand, children: [
