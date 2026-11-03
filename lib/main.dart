@@ -347,18 +347,26 @@ class _PuzzlePageState extends State<PuzzlePage> {
               child: Column(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Column(children: [
                   Row(children: [
-                    Container(width: 10, height: 10,
-                      decoration: const BoxDecoration(color: _violet, shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: _violet, blurRadius: 9)])),
-                    const SizedBox(width: 9),
-                    const Text('Number Slide', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -.5)),
-                    const SizedBox(width: 7),
-                    Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)]),
-                        borderRadius: BorderRadius.circular(6)),
-                      child: const Text('PRO', style: TextStyle(color: _bg, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1))),
-                    const Spacer(),
+                    Expanded(child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Container(width: 10, height: 10,
+                              decoration: const BoxDecoration(color: _violet, shape: BoxShape.circle,
+                                boxShadow: [BoxShadow(color: _violet, blurRadius: 9)])),
+                            const SizedBox(width: 9),
+                            const Text('Number Slide', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -.5)),
+                            const SizedBox(width: 7),
+                            Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)]),
+                                borderRadius: BorderRadius.circular(6)),
+                              child: const Text('PRO', style: TextStyle(color: _bg, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1))),
+                        ]),
+                      ),
+                    )),
+                    const SizedBox(width: 8),
                     _topIcon(Icons.bar_chart_rounded, _leaderboard),
                     const SizedBox(width: 8),
                     _topIcon(sound ? Icons.volume_up_outlined : Icons.volume_off_outlined, () {
