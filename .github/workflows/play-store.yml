@@ -80,3 +80,55 @@ jobs:
           name: number-slide-pro-google-play-listing
           path: play-package/listing/
           if-no-files-found: error
+      - name: Assemble first-upload download
+        run: |
+          cp play/first-upload/FirstUpload.java play/first-upload/Start-First-Upload.cmd play/first-upload/First-upload-guide.html play-package/
+          cp play/FIRST_UPLOAD.md play-package/
+          echo "Source commit $GITHUB_SHA" > play-package/BUILD.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: number-slide-pro-first-upload
+          path: play-package/
+          if-no-files-found: error
+          compression-level: 0
+
+  verify-windows-handoff:
+    needs: package
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: number-slide-pro-first-upload
+          path: first-upload
+      - name: Test the exact Windows launcher in a disposable runner
+        shell: pwsh
+        working-directory: first-upload
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:NUMBER_SLIDE_HEADLESS = '1'
+          $env:NUMBER_SLIDE_STOREPASS = [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+          $key = Join-Path $env:LOCALAPPDATA 'Bilvok/NumberSlidePro/Signing/upload.p12'
+          $expectedNewKey = Test-Path 'android/NumberSlidePro-unsigned.aab'
+          if (Test-Path $key) { throw 'Expected a clean Windows runner.' }
+          try {
+            & .\Start-First-Upload.cmd
+            if ($LASTEXITCODE -ne 0) { throw 'First preparation failed.' }
+            if (-not (Test-Path 'UPLOAD_TO_PLAY/NumberSlidePro-upload-signed.aab')) { throw 'Bundle missing.' }
+            $cert = (Get-FileHash 'UPLOAD_TO_PLAY/upload-certificate.der').Hash
+            if ($expectedNewKey) { $firstKey = (Get-FileHash $key).Hash }
+            & .\Start-First-Upload.cmd
+            if ($LASTEXITCODE -ne 0) { throw 'Second preparation failed.' }
+            if ((Get-FileHash 'UPLOAD_TO_PLAY/upload-certificate.der').Hash -ne $cert) { throw 'Certificate changed.' }
+            if ($expectedNewKey -and ((Get-FileHash $key).Hash -ne $firstKey)) { throw 'Upload key changed.' }
+            if ((Get-ChildItem 'listing/en-US/images/phoneScreenshots' -Filter '*.png').Count -ne 5) { throw 'Screenshot set missing.' }
+            Write-Output 'Windows preparation, signature verification, screenshot set and safe repeat run passed.'
+          } finally {
+            Remove-Item 'UPLOAD_TO_PLAY' -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item $key -Force -ErrorAction SilentlyContinue
+            Remove-Item Env:NUMBER_SLIDE_STOREPASS -ErrorAction SilentlyContinue
+          }

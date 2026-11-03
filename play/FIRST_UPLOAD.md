@@ -4,6 +4,10 @@ Package: `com.bilvok.numberslidepro`. Listing language: English (United States).
 
 The [release package workflow](https://github.com/subair71/number-slide-pro/actions/workflows/play-store.yml) builds the AAB and an installable universal APK from the same release code. It separately captures phone screenshots from that APK and packages the listing text, 512×512 icon, 1024×500 feature graphic, and privacy policy. The workflow does not roll out an app automatically.
 
+## Windows first upload
+
+Download and extract the entire `number-slide-pro-first-upload` artifact, then double-click `Start-First-Upload.cmd`. The launcher finds a JDK 17+ installation, verifies the release checksum, signs and verifies the AAB, and opens the bundle folder, listing guide and Play Console. Its first-time upload key stays in `%LOCALAPPDATA%\\Bilvok\\NumberSlidePro\\Signing\\upload.p12`. Save a private backup and the password. With an existing upload keystore, pass its path and alias to the launcher. On macOS or Linux with JDK 17+, use `java --source 17 FirstUpload.java` from the extracted folder.
+
 ## Signing
 
 Use your existing upload keystore if you already have one. For a first upload with no upload key, create one locally and keep a private backup:
