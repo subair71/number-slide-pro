@@ -19,9 +19,10 @@ When you choose Share Run or Share Challenge, Android lets you select the destin
 Storage and deletion
 Firebase requests use encrypted connections, and the leaderboard uses authentication and database access rules. We retain online player records and best scores to maintain the leaderboard until we process a verified deletion request or discontinue the records. Google manages technical and security logs under its own retention schedules. Clearing storage or uninstalling the app does not remove a score that was already uploaded.
 
-For access, correction or deletion, open Quests → Privacy & data and copy your player ID before clearing the app. Contact Bilvok Technologies privately using the business support channel below. Identify Number Slide Pro and describe your request. We may need further information to verify ownership before removing the Firebase player and associated scores. Avoid sending passwords or posting player IDs in a public issue.
+For access, correction or deletion, open Quests → Privacy & data and copy your player ID before clearing the app. Email admin@bilvok.com or use the private support channel below. Identify Number Slide Pro and describe your request. We may need further information to verify ownership before removing the Firebase player and associated scores. Avoid sending passwords or posting player IDs in a public issue.
 
 Privacy contact
+Email: admin@bilvok.com
 Bilvok Technologies: https://www.bilvok.com/
 Private support and deletion requests: https://wa.me/916282346633
 

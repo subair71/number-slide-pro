@@ -34,7 +34,7 @@ When all four are set, the Android artifact contains an upload-signed AAB and AP
 ## In Play Console
 
 1. Create **Number Slide Pro** in the developer account. Use Game → Puzzle. Confirm distribution, pricing and the first release track in your account.
-2. Under Main store listing, use the title and descriptions, icon, feature graphic and phone screenshots from the listing artifact. Supply a monitored support email.
+2. Under Main store listing, use the title and descriptions, icon, feature graphic and phone screenshots from the listing artifact. Set the public support email to **admin@bilvok.com**.
 3. Under App content, provide this public policy URL:
    https://raw.githubusercontent.com/subair71/number-slide-pro/main/assets/privacy_policy.txt
    The policy is also available inside the game under **Quests → Privacy & data**.

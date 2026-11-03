@@ -16,6 +16,7 @@ for name, limit in (("title", 30), ("short_description", 80), ("full_description
     assert 0 < len(source.read_text().strip()) <= limit, name
     shutil.copy(source, out / source.name)
 shutil.copy("play/listing/en-US/release-notes.txt", out / "release-notes.txt")
+shutil.copy("play/listing/en-US/contact-email.txt", out / "contact-email.txt")
 shutil.copy("assets/privacy_policy.txt", out / "privacy-policy.txt")
 
 screens = ["portrait-4x4", "portrait-theme-vault", "portrait-5x5", "portrait-run-results", "portrait-run-rewards"]
